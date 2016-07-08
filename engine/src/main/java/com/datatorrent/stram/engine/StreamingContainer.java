@@ -223,6 +223,7 @@ public class StreamingContainer extends YarnContainerMain
         } else {
           blocksize = 64;
           blockCount = bufferServerRAM / blocksize;
+          blockCount = Math.max(blockCount, 8);
         }
         // start buffer server, if it was not set externally
         bufferServer = new Server(0, blocksize * 1024 * 1024, blockCount);

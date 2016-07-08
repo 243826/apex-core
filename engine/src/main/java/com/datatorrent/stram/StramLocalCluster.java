@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
@@ -301,7 +302,11 @@ public class StramLocalCluster implements Runnable, Controller
 
     if (!perContainerBufferServer) {
       StreamingContainer.eventloop.start();
-      bufferServer = new Server(0, 1024 * 1024,8);
+      int blockCount = dag.getAllStreams().size() * 2;
+      if (blockCount < 8) {
+        blockCount = 8;
+      }
+      bufferServer = new Server(0, 64 * 1024 * 1024, blockCount);
       bufferServer.setSpoolStorage(new DiskStorage());
       SocketAddress bindAddr = bufferServer.run(StreamingContainer.eventloop);
       this.bufferServerAddress = ((InetSocketAddress)bindAddr);
