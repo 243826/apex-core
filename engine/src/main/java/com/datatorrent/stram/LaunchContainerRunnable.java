@@ -157,6 +157,7 @@ public class LaunchContainerRunnable implements Runnable
     } catch (Exception e) {
       LOG.error("Failed to retrieve principal name", e);
     }
+    containerEnv.put(ApplicationConstants.Environment.LD_LIBRARY_PATH.name(), ApplicationConstants.Environment.PWD.$());
     // Set the environment
     ctx.setEnvironment(containerEnv);
     ctx.setTokens(tokens);
