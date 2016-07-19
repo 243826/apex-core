@@ -173,6 +173,11 @@ public class LaunchContainerRunnable implements Runnable
         if (archives != null) {
           addFilesToLocalResources(LocalResourceType.ARCHIVE, archives, localResources, fs);
         }
+
+        String files = dag.getAttributes().get(LogicalPlan.FILES);
+        if (files != null) {
+          addFilesToLocalResources(LocalResourceType.FILE, files, localResources, fs);
+        }
         ctx.setLocalResources(localResources);
       }
     } catch (IOException e) {
