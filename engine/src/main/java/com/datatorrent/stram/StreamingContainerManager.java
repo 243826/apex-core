@@ -2031,12 +2031,12 @@ public class StreamingContainerManager implements PlanContext
           }
           // recovery window id cannot move backwards
           // when dynamically adding new operators
-          if (sinkOperator.getRecoveryCheckpoint().windowId >= operator.getRecoveryCheckpoint().windowId) {
+          if (sinkOperator.getRecoveryCheckpoint().windowId >= groupOper.getRecoveryCheckpoint().windowId) {
             maxCheckpoint = Checkpoint.min(maxCheckpoint, sinkOperator.getRecoveryCheckpoint());
           }
 
           if (ctx.blocked.contains(sinkOperator)) {
-            if (sinkOperator.stats.getCurrentWindowId() == operator.stats.getCurrentWindowId()) {
+            if (sinkOperator.stats.getCurrentWindowId() == groupOper.stats.getCurrentWindowId()) {
               // downstream operator is blocked by this operator
               ctx.blocked.remove(sinkOperator);
             }

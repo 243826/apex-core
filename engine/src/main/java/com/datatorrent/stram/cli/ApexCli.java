@@ -1885,6 +1885,7 @@ public class ApexCli
             try {
               ap = newAppPackageInstance(new File(fileName));
             } catch (Exception ex) {
+              LOG.warn("Exception while reading app package: ", ex);
               // It's not an app package
               if (requiredAppPackageName != null) {
                 throw new CliException("Config package requires an app package name of \"" + requiredAppPackageName + "\"");
