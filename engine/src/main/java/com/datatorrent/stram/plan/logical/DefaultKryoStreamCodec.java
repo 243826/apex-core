@@ -70,19 +70,19 @@ public class DefaultKryoStreamCodec<T> extends SerializableObject implements Str
   @Override
   public Slice toByteArray(T info)
   {
-    Slice slice = null;
     try {
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       Output output = new Output(os);
       kryo.writeClassAndObject(output, info);
       output.flush();
       byte[] bytes = os.toByteArray();
-      slice = new Slice(bytes, 0, bytes.length);
+      Slice slice = new Slice(bytes, 0, bytes.length);
       os.close();
+      return slice;
+
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
-    return slice;
   }
 
   @Override
