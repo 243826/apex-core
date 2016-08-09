@@ -76,7 +76,8 @@ public class DefaultKryoStreamCodec<T> extends SerializableObject implements Str
       Output output = new Output(os);
       kryo.writeClassAndObject(output, info);
       output.flush();
-      slice = new Slice(os.toByteArray(), 0, os.toByteArray().length);
+      byte[] bytes = os.toByteArray();
+      slice = new Slice(bytes, 0, bytes.length);
       os.close();
     } catch (IOException e) {
       throw Throwables.propagate(e);
