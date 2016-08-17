@@ -19,6 +19,7 @@
 package com.datatorrent.stram;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -73,9 +74,14 @@ public class LocalModeImpl extends LocalMode
   {
     try {
       addLibraryJarsToClasspath(lp);
+    } catch (MalformedURLException ex) {
+      throw new RuntimeException(ex);
+    }
+
+    try {
       return new StramLocalCluster(lp);
-    } catch (Exception e) {
-      throw new RuntimeException("Error creating local cluster", e);
+    } catch (IOException | ClassNotFoundException ex) {
+      throw new RuntimeException(ex);
     }
   }
 
