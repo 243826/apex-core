@@ -348,6 +348,7 @@
           <executions>
             <execution>
               <id>checkstyle</id>
+              <phase>deploy</phase>
               <goals>
                 <goal>check</goal>
               </goals>

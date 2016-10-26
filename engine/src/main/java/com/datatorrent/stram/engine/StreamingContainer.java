@@ -250,9 +250,7 @@ public class StreamingContainer extends YarnContainerMain
         }
 
         eventBus.subscribe(newInstance);
-      } catch (InstantiationException ex) {
-        logger.warn("Container Event Listener Instantiation", ex);
-      } catch (IllegalAccessException ex) {
+      } catch (InstantiationException | IllegalAccessException ex) {
         logger.warn("Container Event Listener Instantiation", ex);
       }
     }
@@ -763,6 +761,7 @@ public class StreamingContainer extends YarnContainerMain
     }
   }
 
+  @SuppressWarnings("deprecation")
   public void processHeartbeatResponse(ContainerHeartbeatResponse rsp)
   {
     if (rsp.nodeRequests != null) {

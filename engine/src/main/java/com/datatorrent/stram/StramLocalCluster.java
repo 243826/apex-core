@@ -301,11 +301,16 @@ public class StramLocalCluster implements Runnable, Controller
     this.umbilical = new UmbilicalProtocolLocalImpl();
 
     if (!perContainerBufferServer) {
+      int bufferServerMb = 0;
+      for (PTOperator operator : dnmgr.getPhysicalPlan().getAllOperators().values()) {
+        bufferServerMb += operator.getBufferServerMemory();
+      }
       StreamingContainer.eventloop.start();
-      int blockCount = dag.getAllStreams().size() * 2;
+      int blockCount = bufferServerMb / 64;
       if (blockCount < 8) {
         blockCount = 8;
       }
+      LOG.warn("blockcount = {}", blockCount);
       bufferServer = new Server(0, 64 * 1024 * 1024, blockCount);
       bufferServer.setSpoolStorage(new DiskStorage());
       SocketAddress bindAddr = bufferServer.run(StreamingContainer.eventloop);
