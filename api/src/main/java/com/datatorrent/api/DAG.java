@@ -240,6 +240,8 @@ public interface DAG extends DAGContext, Serializable
    */
   public abstract <T> void setAttribute(Operator operator, Attribute<T> key, T value);
 
+  public abstract <T> void setOperatorAttribute(Operator operator, Attribute<T> key, T value);
+
   /**
    * <p>setOutputPortAttribute.</p>
    */
