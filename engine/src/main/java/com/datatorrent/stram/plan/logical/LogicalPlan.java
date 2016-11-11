@@ -1479,6 +1479,12 @@ public class LogicalPlan implements Serializable, DAG
     this.getMeta(operator).attributes.put(key, value);
   }
 
+  @Override
+  public <T> void setOperatorAttribute(Operator operator, Attribute<T> key, T value)
+  {
+    this.getMeta(operator).attributes.put(key, value);
+  }
+
   private OutputPortMeta assertGetPortMeta(Operator.OutputPort<?> port)
   {
     for (OperatorMeta o : getAllOperators()) {
