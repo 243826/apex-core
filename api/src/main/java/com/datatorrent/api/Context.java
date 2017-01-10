@@ -361,6 +361,14 @@ public interface Context
      */
     Attribute<String> APPLICATION_DATA_LINK = new Attribute<String>(new String2String());
     /**
+     * The maximum number of containers (excluding the application master) that the application is allowed to request.
+     * If the DAG plan requires less containers, remaining count won't be allocated from the resource manager.
+     * Example: DAG with several operators and all streams container local would require one container,
+     * only one container will be requested from the resource manager.
+     */
+    Attribute<Integer> CONTAINERS_MAX_COUNT = new Attribute<>(Integer.MAX_VALUE);
+
+    /**
      * Transport to push the stats and the metrics.
      * If using the built-in transport, please use an AutoMetricBuiltInTransport object
      */
@@ -383,38 +391,38 @@ public interface Context
     /**
      * Dump extra debug information in launcher, master and containers.
      */
-    Attribute<Boolean> DEBUG = new Attribute<Boolean>(false);
+    Attribute<Boolean> DEBUG = new Attribute<>(false);
     /**
      * The options to be pass to JVM when launching the containers. Options such as java maximum heap size can be specified here.
      */
-    Attribute<String> CONTAINER_JVM_OPTIONS = new Attribute<String>(new String2String());
+    Attribute<String> CONTAINER_JVM_OPTIONS = new Attribute<>(new String2String());
     /**
      * The amount of memory to be requested for the application master. Not used in local mode.
      * Default value is 1GB.
      */
-    Attribute<Integer> MASTER_MEMORY_MB = new Attribute<Integer>(1024);
+    Attribute<Integer> MASTER_MEMORY_MB = new Attribute<>(1024);
     /**
      * Where to spool the data once the buffer server capacity is reached.
      */
-    Attribute<Boolean> BUFFER_SPOOLING = new Attribute<Boolean>(true);
+    Attribute<Boolean> BUFFER_SPOOLING = new Attribute<>(true);
     /**
      * The streaming window size to use for the application. It is specified in milliseconds. Default value is 500ms.
      */
-    Attribute<Integer> STREAMING_WINDOW_SIZE_MILLIS = new Attribute<Integer>(500);
+    Attribute<Integer> STREAMING_WINDOW_SIZE_MILLIS = new Attribute<>(500);
     /**
      * The time interval for saving the operator state. It is specified as a multiple of streaming windows. The operator
      * state is saved periodically with interval equal to the checkpoint interval. Default value is 60 streaming windows.
      */
-    Attribute<Integer> CHECKPOINT_WINDOW_COUNT = new Attribute<Integer>(60);
+    Attribute<Integer> CHECKPOINT_WINDOW_COUNT = new Attribute<>(60);
     /**
      * The path to store application dependencies, recording and other generated files for application master and containers.
      */
-    Attribute<String> APPLICATION_PATH = new Attribute<String>(new String2String());
+    Attribute<String> APPLICATION_PATH = new Attribute<>(new String2String());
     /**
      * The size limit for a file where tuple recordings are stored. When tuples are being recorded they are stored
      * in files. When a file size reaches this limit a new file is created and tuples start getting stored in the new file. Default value is 128k.
      */
-    Attribute<Integer> TUPLE_RECORDING_PART_FILE_SIZE = new Attribute<Integer>(128 * 1024);
+    Attribute<Integer> TUPLE_RECORDING_PART_FILE_SIZE = new Attribute<>(128 * 1024);
     /**
      * The time limit for a file where tuple recordings are stored. When tuples are being recorded they are stored
      * in files. When a tuple recording file creation time falls beyond the time limit window from the current time a new file
@@ -500,24 +508,24 @@ public interface Context
      * The string codec map for classes that are to be set or get through properties as strings.
      * Only supports string codecs that have a constructor with no arguments
      */
-    Attribute<Map<Class<?>, Class<? extends StringCodec<?>>>> STRING_CODECS = new Attribute<Map<Class<?>, Class<? extends StringCodec<?>>>>(new Map2String<Class<?>, Class<? extends StringCodec<?>>>(",", "=", new Class2String<Object>(), new Class2String<StringCodec<?>>()));
+    Attribute<Map<Class<?>, Class<? extends StringCodec<?>>>> STRING_CODECS = new Attribute<>(new Map2String<>(",", "=", new Class2String<>(), new Class2String<StringCodec<?>>()));
 
     /**
      * The number of consecutive container failures that should lead to
      * blacklisting of nodes by application master
      * Blacklisting for nodes is disabled for the default value
      */
-    Attribute<Integer> MAX_CONSECUTIVE_CONTAINER_FAILURES_FOR_BLACKLIST = new Attribute<Integer>(Integer.MAX_VALUE);
+    Attribute<Integer> MAX_CONSECUTIVE_CONTAINER_FAILURES_FOR_BLACKLIST = new Attribute<>(Integer.MAX_VALUE);
 
     /**
      * The amount of time to wait before removing failed nodes from blacklist
      */
-    Attribute<Long> BLACKLISTED_NODE_REMOVAL_TIME_MILLIS = new Attribute<Long>(new Long(60 * 60 * 1000));
+    Attribute<Long> BLACKLISTED_NODE_REMOVAL_TIME_MILLIS = new Attribute<>(new Long(60 * 60 * 1000));
 
     /**
      * Affinity rules for specifying affinity and anti-affinity between logical operators
      */
-    Attribute<AffinityRulesSet> AFFINITY_RULES_SET = new Attribute<AffinityRulesSet>(new JsonStringCodec<AffinityRulesSet>(AffinityRulesSet.class));
+    Attribute<AffinityRulesSet> AFFINITY_RULES_SET = new Attribute<>(new JsonStringCodec<>(AffinityRulesSet.class));
 
     /**
      * Comma separated list of jar file dependencies to be deployed with the application.

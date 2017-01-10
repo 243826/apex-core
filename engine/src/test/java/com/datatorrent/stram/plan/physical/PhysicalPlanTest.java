@@ -1104,7 +1104,7 @@ public class PhysicalPlanTest
     try {
       new PhysicalPlan(dag, new TestPlanContext());
     } catch (AssertionError ae) {
-      Assert.assertThat("Parallel partition needs common ancestor", ae.getMessage(), RegexMatcher.matches("operator cannot extend multiple partitions.*"));
+      Assert.assertThat("Parallel partition needs common ancestor", ae.getMessage(), RegexMatcher.matches(".*cannot extend multiple partitions.*"));
     }
 
     GenericTestOperator commonAncestor = dag.addOperator("commonAncestor", GenericTestOperator.class);

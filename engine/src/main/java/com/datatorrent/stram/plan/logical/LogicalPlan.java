@@ -59,8 +59,7 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import javax.validation.constraints.NotNull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.Sets;
 
 import org.apache.commons.io.input.ClassLoaderObjectInputStream;
 import org.apache.commons.lang.ClassUtils;
@@ -70,7 +69,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 
-import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datatorrent.api.AffinityRule;
 import com.datatorrent.api.AffinityRulesSet;
@@ -172,14 +172,6 @@ public class LogicalPlan implements Serializable, DAG
    * containers.
    */
   public static Attribute<String> FILES = new Attribute<>(new StringCodec.String2String());
-  /**
-   * The maximum number of containers (excluding the application master) that the application is allowed to request.
-   * If the DAG plan requires less containers, remaining count won't be allocated from the resource manager.
-   * Example: DAG with several operators and all streams container local would require one container,
-   * only one container will be requested from the resource manager.
-   */
-  public static Attribute<Integer> CONTAINERS_MAX_COUNT = new Attribute<>(Integer.MAX_VALUE);
-
   /**
    * The application attempt ID from YARN
    */
@@ -1568,9 +1560,14 @@ public class LogicalPlan implements Serializable, DAG
     throw new IllegalArgumentException("Operator not associated with the DAG: " + operator);
   }
 
+  public void setMaxContainerCount(int count)
+  {
+    attributes.put(CONTAINERS_MAX_COUNT, count);
+  }
+
   public int getMaxContainerCount()
   {
-    return this.getValue(CONTAINERS_MAX_COUNT);
+    return getValue(CONTAINERS_MAX_COUNT);
   }
 
   public boolean isDebug()
@@ -1848,7 +1845,7 @@ public class LogicalPlan implements Serializable, DAG
    * validation for affinity rules validates following:
    *  1. The operator names specified in affinity rule are part of the dag
    *  2. Affinity rules do not conflict with anti-affinity rules directly or indirectly
-   *  3. Anti-affinity rules do not conflict with Stream Locality 
+   *  3. Anti-affinity rules do not conflict with Stream Locality
    *  4. Anti-affinity rules do not conflict with host-locality attribute
    *  5. Affinity rule between non stream operators does not have Thread_Local locality
    *  6. Affinity rules do not conflict with host-locality attribute
@@ -1926,7 +1923,7 @@ public class LogicalPlan implements Serializable, DAG
         combineSets(nodeAffinities, pair);
       }
     }
-    
+
 
     for (StreamMeta stream : getAllStreams()) {
       String source = stream.source.getOperatorMeta().getName();

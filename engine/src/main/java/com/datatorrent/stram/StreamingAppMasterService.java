@@ -110,6 +110,7 @@ import com.datatorrent.stram.webapp.AppInfo;
 import com.datatorrent.stram.webapp.StramWebApp;
 
 import static java.lang.Thread.sleep;
+import org.apache.hadoop.yarn.api.records.*;
 
 /**
  * Streaming Application Master
@@ -536,12 +537,10 @@ public class StreamingAppMasterService extends CompositeService
   {
     LOG.info("Application master" + ", appId=" + appAttemptID.getApplicationId().getId() + ", clustertimestamp=" + appAttemptID.getApplicationId().getClusterTimestamp() + ", attemptId=" + appAttemptID.getAttemptId());
 
-    FileInputStream fis = new FileInputStream("./" + LogicalPlan.SER_FILE_NAME);
-    try {
+    try (FileInputStream fis = new FileInputStream("./" + LogicalPlan.SER_FILE_NAME)) {
       this.dag = LogicalPlan.read(fis);
-    } finally {
-      fis.close();
     }
+
     // "debug" simply dumps all data using LOG.info
     if (dag.isDebug()) {
       dumpOutDebugInfo();
@@ -659,6 +658,50 @@ public class StreamingAppMasterService extends CompositeService
   @SuppressWarnings("SleepWhileInLoop")
   private void execute() throws YarnException, IOException
   {
+    /* let's collect some cluster statistics */
+    long nodeReportUpdateTime = 0;
+    final Configuration conf = getConfig();
+    // Use override for resource requestor in case of cloudera distribution, to handle host specific requests
+    ResourceRequestHandler resourceRequestor = System.getenv().containsKey("CDH_HADOOP_BIN") ? new BlacklistBasedResourceRequestHandler() : new ResourceRequestHandler();
+
+
+    YarnClient clientRMService = YarnClient.createYarnClient();
+    try {
+      // YARN-435
+      // we need getClusterNodes to populate the initial node list,
+      // subsequent updates come through the heartbeat response
+      clientRMService.init(conf);
+      clientRMService.start();
+
+      ApplicationReport ar = StramClientUtils.getStartedAppInstanceByName(clientRMService, dag.getAttributes().get(DAG.APPLICATION_NAME), UserGroupInformation.getLoginUser().getUserName(), dag.getAttributes().get(DAG.APPLICATION_ID));
+      if (ar != null) {
+        appDone = true;
+        dnmgr.shutdownDiagnosticsMessage = String.format("Application master failed due to application %s with duplicate application name \"%s\" by the same user \"%s\" is already started.",
+            ar.getApplicationId().toString(), ar.getName(), ar.getUser());
+        LOG.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
+        finishApplication(FinalApplicationStatus.FAILED, 0);
+        return;
+      }
+      resourceRequestor.updateNodeReports(clientRMService.getNodeReports());
+      nodeReportUpdateTime = System.currentTimeMillis() + UPDATE_NODE_REPORTS_INTERVAL;
+    } catch (IOException | YarnException e) {
+      throw new RuntimeException("Failed to retrieve cluster nodes report!", e);
+    } finally {
+      clientRMService.stop();
+    }
+
+    int containerCount = 1;
+    int minMemoryMB = Integer.MAX_VALUE;
+    for (NodeReport report : clientRMService.getNodeReports(NodeState.RUNNING)) {
+      int mem = report.getCapability().getMemory();
+      if (mem < minMemoryMB) {
+        minMemoryMB = mem;
+      }
+      containerCount++;
+    }
+    dag.setMaxContainerCount(containerCount);
+    int containerMemoryMax = (minMemoryMB - dag.getMasterMemoryMB()) >> 1;
+
     LOG.info("Starting ApplicationMaster");
     final Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
     LOG.info("number of tokens: {}", credentials.getAllTokens().size());
@@ -667,7 +710,6 @@ public class StreamingAppMasterService extends CompositeService
       Token<?> token = iter.next();
       LOG.debug("token: {}", token);
     }
-    final Configuration conf = getConfig();
     long tokenLifeTime = (long)(dag.getValue(LogicalPlan.TOKEN_REFRESH_ANTICIPATORY_FACTOR) * Math.min(dag.getValue(LogicalPlan.HDFS_TOKEN_LIFE_TIME), dag.getValue(LogicalPlan.RM_TOKEN_LIFE_TIME)));
     long expiryTime = System.currentTimeMillis() + tokenLifeTime;
     LOG.debug(" expiry token time {}", tokenLifeTime);
@@ -683,6 +725,9 @@ public class StreamingAppMasterService extends CompositeService
     int minVcores = conf.getInt("yarn.scheduler.minimum-allocation-vcores", 0);
     LOG.info("Max mem {}m, Min mem {}m, Max vcores {} and Min vcores {} capabililty of resources in this cluster ", maxMem, minMem, maxVcores, minVcores);
 
+    if (containerMemoryMax > maxMem) {
+      containerMemoryMax = maxMem;
+    }
     long blacklistRemovalTime = dag.getValue(DAGContext.BLACKLISTED_NODE_REMOVAL_TIME_MILLIS);
     int maxConsecutiveContainerFailures = dag.getValue(DAGContext.MAX_CONSECUTIVE_CONTAINER_FAILURES_FOR_BLACKLIST);
     LOG.info("Blacklist removal time in millis = {}, max consecutive node failure count = {}", blacklistRemovalTime, maxConsecutiveContainerFailures);
@@ -697,42 +742,14 @@ public class StreamingAppMasterService extends CompositeService
     // is not required.
 
     int loopCounter = -1;
-    long nodeReportUpdateTime = 0;
     List<ContainerId> releasedContainers = new ArrayList<>();
     int numTotalContainers = 0;
     // keep track of already requested containers to not request them again while waiting for allocation
     int numRequestedContainers = 0;
     int numReleasedContainers = 0;
     int nextRequestPriority = 0;
-    // Use override for resource requestor in case of cloudera distribution, to handle host specific requests
-    ResourceRequestHandler resourceRequestor = System.getenv().containsKey("CDH_HADOOP_BIN") ? new BlacklistBasedResourceRequestHandler() : new ResourceRequestHandler();
 
     List<ContainerStartRequest> pendingContainerStartRequests = new LinkedList<>();
-    YarnClient clientRMService = YarnClient.createYarnClient();
-
-    try {
-      // YARN-435
-      // we need getClusterNodes to populate the initial node list,
-      // subsequent updates come through the heartbeat response
-      clientRMService.init(conf);
-      clientRMService.start();
-
-      ApplicationReport ar = StramClientUtils.getStartedAppInstanceByName(clientRMService, dag.getAttributes().get(DAG.APPLICATION_NAME), UserGroupInformation.getLoginUser().getUserName(), dag.getAttributes().get(DAG.APPLICATION_ID));
-      if (ar != null) {
-        appDone = true;
-        dnmgr.shutdownDiagnosticsMessage = String.format("Application master failed due to application %s with duplicate application name \"%s\" by the same user \"%s\" is already started.",
-            ar.getApplicationId().toString(), ar.getName(), ar.getUser());
-        LOG.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
-        finishApplication(FinalApplicationStatus.FAILED, numTotalContainers);
-        return;
-      }
-      resourceRequestor.updateNodeReports(clientRMService.getNodeReports());
-      nodeReportUpdateTime = System.currentTimeMillis() + UPDATE_NODE_REPORTS_INTERVAL;
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to retrieve cluster nodes report.", e);
-    } finally {
-      clientRMService.stop();
-    }
 
     // check for previously allocated containers
     // as of 2.2, containers won't survive AM restart, but this will change in the future - YARN-1490
@@ -784,9 +801,9 @@ public class StreamingAppMasterService extends CompositeService
       if (!dnmgr.containerStartRequests.isEmpty()) {
         StreamingContainerAgent.ContainerStartRequest csr;
         while ((csr = dnmgr.containerStartRequests.poll()) != null) {
-          if (csr.container.getRequiredMemoryMB() > maxMem) {
-            LOG.warn("Container memory {}m above max threshold of cluster. Using max value {}m.", csr.container.getRequiredMemoryMB(), maxMem);
-            csr.container.setRequiredMemoryMB(maxMem);
+          if (csr.container.getRequiredMemoryMB() > containerMemoryMax) {
+            LOG.warn("Container memory {}m above max threshold of cluster. Using max value {}m.", csr.container.getRequiredMemoryMB(), containerMemoryMax);
+            csr.container.setRequiredMemoryMB(containerMemoryMax);
           }
           if (csr.container.getRequiredMemoryMB() < minMem) {
             csr.container.setRequiredMemoryMB(minMem);
@@ -856,6 +873,7 @@ public class StreamingAppMasterService extends CompositeService
 
       // Retrieve list of allocated containers from the response
       List<Container> newAllocatedContainers = amResp.getAllocatedContainers();
+
       // LOG.info("Got response from RM for container ask, allocatedCnt=" + newAllocatedContainers.size());
       numRequestedContainers -= newAllocatedContainers.size();
       long timestamp = System.currentTimeMillis();
@@ -967,19 +985,10 @@ public class StreamingAppMasterService extends CompositeService
               }
             }
           }
-//          if (exitStatus == 1) {
-//            // non-recoverable StreamingContainer failure
-//            appDone = true;
-//            finalStatus = FinalApplicationStatus.FAILED;
-//            dnmgr.shutdownDiagnosticsMessage = "Unrecoverable failure " + containerStatus.getContainerId();
-//            LOG.info("Exiting due to: {}", dnmgr.shutdownDiagnosticsMessage);
-//          }
-//          else {
           // Recoverable failure or process killed (externally or via stop request by AM)
           // also occurs when a container was released by the application but never assigned/launched
           LOG.debug("Container {} failed or killed.", containerStatus.getContainerId());
           dnmgr.scheduleContainerRestart(containerStatus.getContainerId().toString());
-//          }
         } else {
           // container completed successfully
           numCompletedContainers.incrementAndGet();

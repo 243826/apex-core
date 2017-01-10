@@ -124,7 +124,6 @@ public class PhysicalPlan implements Serializable
   private final List<PTContainer> containers = new CopyOnWriteArrayList<>();
   private final LogicalPlan dag;
   private final transient PlanContext ctx;
-  private int maxContainers = 1;
   private int availableMemoryMB = Integer.MAX_VALUE;
   private final LocalityPrefs localityPrefs = new LocalityPrefs();
   private final LocalityPrefs inlinePrefs = new LocalityPrefs();
@@ -141,8 +140,9 @@ public class PhysicalPlan implements Serializable
   private PTContainer getContainer(int index)
   {
     if (index >= containers.size()) {
+      int maxContainers = dag.getMaxContainerCount();
       if (index >= maxContainers) {
-        index = maxContainers - 1;
+        index %= maxContainers;
       }
       for (int i = containers.size(); i < index + 1; i++) {
         containers.add(i, new PTContainer(this));
@@ -340,8 +340,6 @@ public class PhysicalPlan implements Serializable
 
     this.dag = dag;
     this.ctx = ctx;
-    this.maxContainers = Math.max(dag.getMaxContainerCount(), 1);
-    LOG.debug("Max containers: {}", this.maxContainers);
 
     Stack<OperatorMeta> pendingNodes = new Stack<>();
 
@@ -435,14 +433,14 @@ public class PhysicalPlan implements Serializable
     updatePartitionsInfoForPersistOperator(dag);
 
     Map<PTOperator, PTContainer> operatorContainerMap = new HashMap<>();
-    
+
     // assign operators to containers
     int groupCount = 0;
     Set<PTOperator> deployOperators = Sets.newHashSet();
     for (Map.Entry<OperatorMeta, PMapping> e : logicalToPTOperator.entrySet()) {
       for (PTOperator oper : e.getValue().getAllOperators()) {
         if (oper.container == null) {
-          PTContainer container = getContainer((groupCount++) % maxContainers);
+          PTContainer container = getContainer(groupCount++);
           if (!container.operators.isEmpty()) {
             LOG.warn("Operator {} shares container without locality contraint due to insufficient resources.", oper);
           }
@@ -463,7 +461,7 @@ public class PhysicalPlan implements Serializable
       }
     }
 
-    
+
     for (PTContainer container : containers) {
       updateContainerMemoryWithBufferServer(container);
       container.setRequiredVCores(getVCores(container.getOperators()));
@@ -477,20 +475,20 @@ public class PhysicalPlan implements Serializable
     // Log container anti-affinity
     if (LOG.isDebugEnabled()) {
       for (PTContainer container : containers) {
-        List<String> antiOperators = new ArrayList<String>();
+        List<String> antiOperators = new ArrayList<>();
         for (PTContainer c : container.getStrictAntiPrefs()) {
           for (PTOperator operator : c.getOperators()) {
             antiOperators.add(operator.getName());
           }
         }
-        List<String> containerOperators = new ArrayList<String>();
+        List<String> containerOperators = new ArrayList<>();
         for (PTOperator operator : container.getOperators()) {
           containerOperators.add(operator.getName());
         }
         LOG.debug("Container with operators [{}] has anti affinity with [{}]", StringUtils.join(containerOperators, ","), StringUtils.join(antiOperators, ","));
       }
     }
-    
+
     for (Map.Entry<PTOperator, Operator> operEntry : this.newOpers.entrySet()) {
       initCheckpoint(operEntry.getKey(), operEntry.getValue(), Checkpoint.INITIAL_CHECKPOINT);
     }
@@ -1636,6 +1634,7 @@ public class PhysicalPlan implements Serializable
     String host = pnodes.logicalOperator.getValue(OperatorContext.LOCALITY_HOST);
     localityPrefs.add(pnodes, host);
 
+    InputPortMeta ipm = null;
     PMapping upstreamPartitioned = null;
 
     for (Map.Entry<LogicalPlan.InputPortMeta, StreamMeta> e : om.getInputStreams().entrySet()) {
@@ -1648,13 +1647,17 @@ public class PhysicalPlan implements Serializable
         if (upstreamPartitioned != null) {
           // need to have common root
           if (!upstreamPartitioned.parallelPartitions.contains(m.logicalOperator) && upstreamPartitioned != m) {
-            String msg = String.format("operator cannot extend multiple partitions (%s and %s)", upstreamPartitioned.logicalOperator, m.logicalOperator);
+            @SuppressWarnings("null") /* ipm is guaranteed to be non null */
+            String msg = String.format("Operator %s(iport=%s, iport=%s) cannot extend multiple partitions (%s and %s)",
+                                       om.getName(), ipm.getPortName(), e.getKey().getPortName(),
+                                       upstreamPartitioned.logicalOperator, m.logicalOperator);
             throw new AssertionError(msg);
           }
         }
         m.parallelPartitions.add(pnodes.logicalOperator);
         pnodes.parallelPartitions = m.parallelPartitions;
         upstreamPartitioned = m;
+        ipm = e.getKey();
       }
 
       if (Locality.CONTAINER_LOCAL == e.getValue().getLocality() || Locality.THREAD_LOCAL == e.getValue().getLocality()) {
