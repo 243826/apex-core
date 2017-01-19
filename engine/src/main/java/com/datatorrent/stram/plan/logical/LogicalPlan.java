@@ -1333,7 +1333,8 @@ public class LogicalPlan implements Serializable, DAG
     T instance;
     try {
       instance = clazz.newInstance();
-    } catch (Exception ex) {
+    }
+    catch (InstantiationException | IllegalAccessException ex) {
       throw new IllegalArgumentException(ex);
     }
     addModule(name, instance);

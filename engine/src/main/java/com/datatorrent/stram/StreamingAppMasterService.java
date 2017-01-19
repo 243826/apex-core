@@ -169,7 +169,7 @@ public class StreamingAppMasterService extends CompositeService
     int failureCount;
     long blackListAdditionTime;
 
-    public NodeFailureStats(long lastFailureTimeStamp, int failureCount)
+    NodeFailureStats(long lastFailureTimeStamp, int failureCount)
     {
       this.lastFailureTimeStamp = lastFailureTimeStamp;
       this.failureCount = failureCount;
