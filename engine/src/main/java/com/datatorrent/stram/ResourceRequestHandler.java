@@ -58,6 +58,9 @@ public class ResourceRequestHandler
 
   protected static final int NUMBER_MISSED_HEARTBEATS = 30;
 
+  private int maximumMemory;
+  private int minimumMemory;
+
   public ResourceRequestHandler()
   {
     super();
@@ -123,7 +126,16 @@ public class ResourceRequestHandler
 
     String host = getHost(csr, first);
     Resource capability = Records.newRecord(Resource.class);
-    capability.setMemory(csr.container.getRequiredMemoryMB());
+
+    int memMB = csr.container.getRequiredMemoryMB();
+    if (memMB > maximumMemory) {
+      memMB = maximumMemory;
+    }
+    else if (memMB < minimumMemory) {
+      memMB = minimumMemory;
+    }
+    capability.setMemory(memMB);
+
     capability.setVirtualCores(csr.container.getRequiredVCores());
     if (host == INVALID_HOST) {
       return null;
@@ -346,6 +358,38 @@ public class ResourceRequestHandler
       }
     }
     return null;
+  }
+
+  /**
+   * @return the maximumMemory
+   */
+  public int getMaximumMemory()
+  {
+    return maximumMemory;
+  }
+
+  /**
+   * @param maximumMemory the maximumMemory to set
+   */
+  public void setMaximumMemory(int maximumMemory)
+  {
+    this.maximumMemory = maximumMemory;
+  }
+
+  /**
+   * @return the minimumMemory
+   */
+  public int getMinimumMemory()
+  {
+    return minimumMemory;
+  }
+
+  /**
+   * @param minimumMemory the minimumMemory to set
+   */
+  public void setMinimumMemory(int minimumMemory)
+  {
+    this.minimumMemory = minimumMemory;
   }
 
 }

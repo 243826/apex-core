@@ -62,7 +62,7 @@ public class BasicContainerOptConfigurator implements Context.ContainerOptConfig
     List<Map<String, Object>> jvmOptsList = Lists.newArrayList();
     for (DAG.OperatorMeta operatorMeta : operatorMetaList) {
       Map<String, Object> operatorMap = parseJvmOpts(operatorMeta.getValue(Context.OperatorContext.JVM_OPTIONS), operatorMeta.getValue(Context.OperatorContext.MEMORY_MB));
-      LOG.info("property map for operator {}", operatorMap);
+      LOG.debug("property map for operator {}", operatorMap);
       Set<String> operatorPropertySet = (Set<String>)operatorMap.get(GENERIC);
       if (genericProperties == null) {
         genericProperties = operatorPropertySet;
