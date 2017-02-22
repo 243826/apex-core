@@ -21,10 +21,11 @@ package com.datatorrent.stram;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -32,12 +33,11 @@ import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
 import org.apache.hadoop.yarn.util.Records;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datatorrent.stram.StreamingContainerAgent.ContainerStartRequest;
 import com.datatorrent.stram.plan.physical.PTContainer;
@@ -52,8 +52,6 @@ import com.datatorrent.stram.plan.physical.PTOperator.HostOperatorSet;
  */
 public class ResourceRequestHandler
 {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ResourceRequestHandler.class);
   private static final String INVALID_HOST = "INVALID_HOST";
 
   protected static final int NUMBER_MISSED_HEARTBEATS = 30;
@@ -64,19 +62,19 @@ public class ResourceRequestHandler
   public ResourceRequestHandler()
   {
     super();
+    this.minimumMemory = 1;
+    this.maximumMemory = Integer.MAX_VALUE;
   }
 
   /**
    * Issue requests to AM RM Client again if previous container requests expired and were not allocated by Yarn
-   * @param amRmClient
    * @param requestedResources
    * @param loopCounter
    * @param resourceRequestor
    * @param containerRequests
    * @param removedContainerRequests
    */
-  public void reissueContainerRequests(AMRMClient<ContainerRequest> amRmClient,
-                                       Map<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> requestedResources,
+  public void reissueContainerRequests(Map<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> requestedResources,
                                        int loopCounter,
                                        ResourceRequestHandler resourceRequestor,
                                        List<ContainerRequest> containerRequests,
@@ -84,19 +82,29 @@ public class ResourceRequestHandler
   {
     if (!requestedResources.isEmpty()) {
       for (Map.Entry<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> entry : requestedResources.entrySet()) {
+        logger.info("{} Evaluating {}", loopCounter, entry.getValue());
         /*
          * Create container requests again if pending requests were not allocated by Yarn till timeout.
          */
         if ((loopCounter - entry.getValue().getKey()) > NUMBER_MISSED_HEARTBEATS) {
-          StreamingContainerAgent.ContainerStartRequest csr = entry.getKey();
-          removedContainerRequests.add(entry.getValue().getRight());
-          ContainerRequest cr = resourceRequestor.createContainerRequest(csr, false);
-          entry.getValue().setLeft(loopCounter);
-          entry.getValue().setRight(cr);
-          containerRequests.add(cr);
+          reissueContainerRequest(entry, removedContainerRequests, resourceRequestor, loopCounter, containerRequests);
         }
       }
     }
+  }
+
+  public void reissueContainerRequest(Entry<ContainerStartRequest, MutablePair<Integer, ContainerRequest>> entry,
+                                      List<ContainerRequest> removedContainerRequests,
+                                      ResourceRequestHandler resourceRequestor,
+                                      int loopCounter,
+                                      List<ContainerRequest> containerRequests)
+  {
+    StreamingContainerAgent.ContainerStartRequest csr = entry.getKey();
+    removedContainerRequests.add(entry.getValue().getRight());
+    ContainerRequest cr = resourceRequestor.createContainerRequest(csr, false);
+    entry.getValue().setLeft(loopCounter);
+    entry.getValue().setRight(cr);
+    containerRequests.add(cr);
   }
 
   /**
@@ -137,19 +145,20 @@ public class ResourceRequestHandler
     capability.setMemory(memMB);
 
     capability.setVirtualCores(csr.container.getRequiredVCores());
-    if (host == INVALID_HOST) {
+
+    if (host == null) {
+      // For now, only memory is supported so we set memory requirements
+      return new ContainerRequest(capability, nodes, racks, Priority.newInstance(priority));
+    }
+    else if (INVALID_HOST.equals(host)) {
       return null;
     }
-    if (host != null) {
-      nodes = new String[]{host};
-      // in order to request a host, we don't have to set the rack if the locality is false
-      /*
+
+    // in order to request a host, we don't have to set the rack if the locality is false
+    /*
        * if(this.nodeToRack.get(host) != null){ racks = new String[] { this.nodeToRack.get(host) }; }
-       */
-      return new ContainerRequest(capability, nodes, racks, Priority.newInstance(priority), false);
-    }
-    // For now, only memory is supported so we set memory requirements
-    return new ContainerRequest(capability, nodes, racks, Priority.newInstance(priority));
+     */
+    return new ContainerRequest(capability, new String[] {host}, racks, Priority.newInstance(priority), false);
   }
 
   private final Map<String, NodeReport> nodeReportMap = Maps.newHashMap();
@@ -174,7 +183,7 @@ public class ResourceRequestHandler
     for (NodeReport nr : nodeReports) {
       StringBuilder sb = new StringBuilder();
       sb.append("rackName=").append(nr.getRackName()).append(",nodeid=").append(nr.getNodeId()).append(",numContainers=").append(nr.getNumContainers()).append(",capability=").append(nr.getCapability()).append("used=").append(nr.getUsed()).append("state=").append(nr.getNodeState());
-      LOG.info("Node report: " + sb);
+      logger.debug("Node report: {}", sb);
       nodeReportMap.put(nr.getNodeId().getHost(), nr);
       nodeToRack.put(nr.getNodeId().getHost(), nr.getRackName());
     }
@@ -254,12 +263,12 @@ public class ResourceRequestHandler
     if (!c.getPreferredAntiPrefs().isEmpty()) {
       populateAntiHostList(c, antiPreferredHosts);
     }
-    LOG.info("Strict anti-affinity = {} for container with operators {}", antiHosts, StringUtils.join(c.getOperators(), ","));
+    logger.info("Strict anti-affinity = {} for container with operators {}", antiHosts, StringUtils.join(c.getOperators(), ","));
     for (PTOperator oper : c.getOperators()) {
       HostOperatorSet grpObj = oper.getNodeLocalOperators();
       Set<PTOperator> nodeLocalSet = grpObj.getOperatorSet();
       if (nodeLocalSet.size() > 1 ||  !c.getStrictAntiPrefs().isEmpty() || !c.getPreferredAntiPrefs().isEmpty()) {
-        LOG.info("Finding new host for {}", nodeLocalSet);
+        logger.info("Finding new host for {}", nodeLocalSet);
         int aggrMemory = c.getRequiredMemoryMB();
         int vCores = c.getRequiredVCores();
         Set<PTContainer> containers = Sets.newHashSet();
@@ -286,7 +295,7 @@ public class ResourceRequestHandler
         }
       }
     }
-    LOG.info("Found host {}", host);
+    logger.info("Found host {}", host);
     return host;
   }
 
@@ -392,4 +401,5 @@ public class ResourceRequestHandler
     this.minimumMemory = minimumMemory;
   }
 
+  private static final Logger logger = LoggerFactory.getLogger(ResourceRequestHandler.class);
 }

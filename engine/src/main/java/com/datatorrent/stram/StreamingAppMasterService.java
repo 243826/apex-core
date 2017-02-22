@@ -36,11 +36,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import static java.lang.Thread.sleep;
 
 import javax.xml.bind.annotation.XmlElement;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -55,6 +57,7 @@ import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.FinishApplicationMasterRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
+import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
@@ -81,8 +84,8 @@ import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.hadoop.yarn.webapp.WebApp;
 import org.apache.hadoop.yarn.webapp.WebApps;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datatorrent.api.Attribute;
 import com.datatorrent.api.AutoMetric;
@@ -108,9 +111,6 @@ import com.datatorrent.stram.security.StramWSFilterInitializer;
 import com.datatorrent.stram.util.SecurityUtils;
 import com.datatorrent.stram.webapp.AppInfo;
 import com.datatorrent.stram.webapp.StramWebApp;
-
-import static java.lang.Thread.sleep;
-import org.apache.hadoop.yarn.api.records.*;
 
 /**
  * Streaming Application Master
@@ -480,6 +480,7 @@ public class StreamingAppMasterService extends CompositeService
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getMetrics()
     {
       if (StreamingAppMasterService.this.dnmgr != null) {
@@ -755,7 +756,7 @@ public class StreamingAppMasterService extends CompositeService
     // The allocate calls to the RM count as heartbeat so, for now, this additional heartbeat emitter
     // is not required.
 
-    int loopCounter = -1;
+    int loopCounter = 0;
     List<ContainerId> releasedContainers = new ArrayList<>();
     int numTotalContainers = 0;
     // keep track of already requested containers to not request them again while waiting for allocation
@@ -805,11 +806,14 @@ public class StreamingAppMasterService extends CompositeService
             /**
              * there may be some requested resources which are asking for previous
              * memory. We need to tell them to change their demands.
+             *
              */
+            // this change is a problem since I noticed that the containers which are
+            // probably released by this block are completely untracked after this point.
             for (MutablePair<Integer, ContainerRequest> resource : requestedResources.values()) {
-              removedContainerRequests.add(resource.right);
+              LOG.info("Setting the loop value for {} from {} to {}", resource.right, resource.left, 0);
+              resource.left = 0;
             }
-            requestedResources.clear();
 
             for (String containerId : allocatedContainers.keySet()) {
               LOG.info("Requesting stop container: {}", containerId);
@@ -817,7 +821,7 @@ public class StreamingAppMasterService extends CompositeService
             }
 
             int countContainersPerHost = countContainers / countHealthyHosts;
-            LOG.info("countContainersPerHost = {} countContainers = {} countHealthyHosts = {} minMemoryMB = {} MasterMemoryMB = {}",
+            LOG.debug("countContainersPerHost = {} countContainers = {} countHealthyHosts = {} minMemoryMB = {} MasterMemoryMB = {}",
                      countContainersPerHost,
                      countContainers,
                      countHealthyHosts,
@@ -857,8 +861,13 @@ public class StreamingAppMasterService extends CompositeService
       // need not have any available containers
       try {
         sleep(1000);
-      } catch (InterruptedException e) {
-        LOG.info("Sleep interrupted " + e.getMessage());
+      }
+      catch (InterruptedException e) {
+        LOG.debug("Idle sleep interrupted!", e);
+        dnmgr.shutdownDiagnosticsMessage = "The AM was interrupted, snapping out of heartbeat loop!";
+        finalStatus = FinalApplicationStatus.FAILED;
+        appDone = true;
+        break;
       }
 
       // Setup request to be sent to RM to allocate containers
@@ -898,7 +907,7 @@ public class StreamingAppMasterService extends CompositeService
         pendingContainerStartRequests.removeAll(removalList);
       }
 
-      resourceRequestor.reissueContainerRequests(amRmClient, requestedResources, loopCounter, resourceRequestor, containerRequests, removedContainerRequests);
+      resourceRequestor.reissueContainerRequests(requestedResources, loopCounter, resourceRequestor, containerRequests, removedContainerRequests);
 
      /* Remove nodes from blacklist after timeout */
       List<String> blacklistRemovals = new ArrayList<>();
@@ -926,7 +935,6 @@ public class StreamingAppMasterService extends CompositeService
             throw new YarnRuntimeException("Received the " + amResp.getAMCommand() + " command from RM");
           default:
             throw new YarnRuntimeException("Received the " + amResp.getAMCommand() + " command from RM");
-
         }
       }
       releasedContainers.clear();
@@ -938,14 +946,13 @@ public class StreamingAppMasterService extends CompositeService
       numRequestedContainers -= newAllocatedContainers.size();
       long timestamp = System.currentTimeMillis();
       for (Container allocatedContainer : newAllocatedContainers) {
-
         LOG.info("Got new container." + ", containerId=" + allocatedContainer.getId() + ", containerNode=" + allocatedContainer.getNodeId() + ", containerNodeURI=" + allocatedContainer.getNodeHttpAddress() + ", containerResourceMemory" + allocatedContainer.getResource().getMemory() + ", priority" + allocatedContainer.getPriority());
-        // + ", containerToken" + allocatedContainer.getContainerToken().getIdentifier().toString());
 
         boolean alreadyAllocated = true;
         StreamingContainerAgent.ContainerStartRequest csr = null;
         for (Map.Entry<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> entry : requestedResources.entrySet()) {
-          if (entry.getKey().container.getResourceRequestPriority() == allocatedContainer.getPriority().getPriority()) {
+          if (entry.getKey().container.getResourceRequestPriority() == allocatedContainer.getPriority().getPriority()
+                  && entry.getValue().left != 0) {
             alreadyAllocated = false;
             csr = entry.getKey();
             break;
@@ -953,12 +960,15 @@ public class StreamingAppMasterService extends CompositeService
         }
 
         if (alreadyAllocated) {
-          LOG.info("Releasing {} as resource with priority {} was already assigned", allocatedContainer.getId(), allocatedContainer.getPriority());
+          LOG.info("Releasing {} as resource with priority {} was already assigned",
+                   allocatedContainer.getId(),
+                   allocatedContainer.getPriority());
           releasedContainers.add(allocatedContainer.getId());
           numReleasedContainers++;
           numRequestedContainers++;
           continue;
         }
+
         if (csr != null) {
           requestedResources.remove(csr);
         }
@@ -1014,6 +1024,7 @@ public class StreamingAppMasterService extends CompositeService
           UserGroupInformation ugi = UserGroupInformation.getLoginUser();
           delegationTokenManager.cancelToken(allocatedContainer.delegationToken, ugi.getUserName());
         }
+
         int exitStatus = containerStatus.getExitStatus();
         if (0 != exitStatus) {
           if (allocatedContainer != null) {
@@ -1024,17 +1035,17 @@ public class StreamingAppMasterService extends CompositeService
               if (!failedBlackListedNodes.contains(hostname)) {
                 // Blacklist the node if not already blacklisted
                 if (failedContainerNodesMap.containsKey(hostname)) {
-                  NodeFailureStats stats = failedContainerNodesMap.get(hostname);
+                  NodeFailureStats lstats = failedContainerNodesMap.get(hostname);
                   long timeStamp = System.currentTimeMillis();
-                  if (timeStamp - stats.lastFailureTimeStamp  >= blacklistRemovalTime) {
+                  if (timeStamp - lstats.lastFailureTimeStamp  >= blacklistRemovalTime) {
                     // Reset failure count if last failure was before Blacklist removal time
-                    stats.failureCount = 1;
-                    stats.lastFailureTimeStamp = timeStamp;
+                    lstats.failureCount = 1;
+                    lstats.lastFailureTimeStamp = timeStamp;
                   } else {
-                    stats.lastFailureTimeStamp = timeStamp;
-                    stats.failureCount++;
-                    if (stats.failureCount >= maxConsecutiveContainerFailures) {
-                      LOG.info("Node {} failed {} times consecutively within {} minutes, marking the node blacklisted", hostname, stats.failureCount, blacklistRemovalTime / (60 * 1000));
+                    lstats.lastFailureTimeStamp = timeStamp;
+                    lstats.failureCount++;
+                    if (lstats.failureCount >= maxConsecutiveContainerFailures) {
+                      LOG.info("Node {} failed {} times consecutively within {} minutes, marking the node blacklisted", hostname, lstats.failureCount, blacklistRemovalTime / (60 * 1000));
                       blacklistAdditions.add(hostname);
                       failedBlackListedNodes.add(hostname);
                     }
@@ -1055,9 +1066,9 @@ public class StreamingAppMasterService extends CompositeService
           LOG.info("Container completed successfully." + ", containerId=" + containerStatus.getContainerId());
           // Reset counter for node failure, if exists
           String hostname = allocatedContainer.container.getNodeId().getHost();
-          NodeFailureStats stats = failedContainerNodesMap.get(hostname);
-          if (stats != null) {
-            stats.failureCount = 0;
+          NodeFailureStats lstats = failedContainerNodesMap.get(hostname);
+          if (lstats != null) {
+            lstats.failureCount = 0;
           }
         }
 
@@ -1074,8 +1085,8 @@ public class StreamingAppMasterService extends CompositeService
         amRmClient.updateBlacklist(blacklistAdditions, null);
         long timeStamp = System.currentTimeMillis();
         for (String hostname : blacklistAdditions) {
-          NodeFailureStats stats = failedContainerNodesMap.get(hostname);
-          stats.blackListAdditionTime = timeStamp;
+          NodeFailureStats lstats = failedContainerNodesMap.get(hostname);
+          lstats.blackListAdditionTime = timeStamp;
         }
       }
       if (dnmgr.forcedShutdown) {
@@ -1162,9 +1173,9 @@ public class StreamingAppMasterService extends CompositeService
   private AllocateResponse sendContainerAskToRM(List<ContainerRequest> containerRequests, List<ContainerRequest> removedContainerRequests, List<ContainerId> releasedContainers) throws YarnException, IOException
   {
     if (removedContainerRequests.size() > 0) {
-      LOG.info(" Removing container request: " + removedContainerRequests);
+      LOG.info(" Removing container request: {}", removedContainerRequests);
       for (ContainerRequest cr : removedContainerRequests) {
-        LOG.info("Removed container: {}", cr.toString());
+        LOG.info("Removed container: {}", cr);
         amRmClient.removeContainerRequest(cr);
       }
     }
