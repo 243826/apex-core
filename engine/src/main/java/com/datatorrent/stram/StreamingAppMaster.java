@@ -78,6 +78,7 @@ public class StreamingAppMaster extends StramUtils.YarnContainerMain
       return;
     }
 
+    // create and pass the application context instead to the application! - Chetan
     Map<String, String> envs = System.getenv();
     ApplicationAttemptId appAttemptID = Records.newRecord(ApplicationAttemptId.class);
     if (!envs.containsKey(Environment.CONTAINER_ID.name())) {
