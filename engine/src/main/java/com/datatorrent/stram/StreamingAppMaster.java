@@ -92,36 +92,21 @@ public class StreamingAppMaster extends StramUtils.YarnContainerMain
       appAttemptID = containerId.getApplicationAttemptId();
     }
 
-    boolean result = false;
-    StreamingAppMasterService appMaster = null;
-    try {
-      appMaster = new StreamingAppMasterService(appAttemptID);
-      LOG.info("Initializing Application Master.");
-
+    try (StreamingAppMasterService appMaster = new StreamingAppMasterService(appAttemptID)) {
       Configuration conf = new YarnConfiguration();
       appMaster.init(conf);
       appMaster.start();
-      result = appMaster.run();
-    } catch (Throwable t) {
-      LOG.error("Exiting Application Master", t);
-      System.exit(1);
-    } finally {
-      if (appMaster != null) {
-        appMaster.stop();
+      if (appMaster.run()) {
+        LOG.info("Application Master Finished.");
+        System.exit(0);
       }
-    }
-
-    if (result) {
-      LOG.info("Application Master completed.");
-      System.exit(0);
-    } else {
-      LOG.info("Application Master failed.");
-      System.exit(2);
+      else {
+        LOG.info("Application Master Failed!");
+        System.exit(2);
+      }
+    } catch (Exception ex) {
+      LOG.error("Application Master Ended Abruptly!", ex);
+      System.exit(1);
     }
   }
-
-  public StreamingAppMaster()
-  {
-  }
-
 }
