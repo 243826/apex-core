@@ -70,13 +70,11 @@ public class ResourceRequestHandler
    * Issue requests to AM RM Client again if previous container requests expired and were not allocated by Yarn
    * @param requestedResources
    * @param loopCounter
-   * @param resourceRequestor
    * @param containerRequests
    * @param removedContainerRequests
    */
   public void reissueContainerRequests(Map<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> requestedResources,
                                        int loopCounter,
-                                       ResourceRequestHandler resourceRequestor,
                                        List<ContainerRequest> containerRequests,
                                        List<ContainerRequest> removedContainerRequests)
   {
@@ -87,7 +85,7 @@ public class ResourceRequestHandler
          * Create container requests again if pending requests were not allocated by Yarn till timeout.
          */
         if ((loopCounter - entry.getValue().getKey()) > NUMBER_MISSED_HEARTBEATS) {
-          reissueContainerRequest(entry, removedContainerRequests, resourceRequestor, loopCounter, containerRequests);
+          reissueContainerRequest(entry, removedContainerRequests, loopCounter, containerRequests);
         }
       }
     }
@@ -95,13 +93,12 @@ public class ResourceRequestHandler
 
   public void reissueContainerRequest(Entry<ContainerStartRequest, MutablePair<Integer, ContainerRequest>> entry,
                                       List<ContainerRequest> removedContainerRequests,
-                                      ResourceRequestHandler resourceRequestor,
                                       int loopCounter,
                                       List<ContainerRequest> containerRequests)
   {
     StreamingContainerAgent.ContainerStartRequest csr = entry.getKey();
     removedContainerRequests.add(entry.getValue().getRight());
-    ContainerRequest cr = resourceRequestor.createContainerRequest(csr, false);
+    ContainerRequest cr = createContainerRequest(csr, false);
     entry.getValue().setLeft(loopCounter);
     entry.getValue().setRight(cr);
     containerRequests.add(cr);
