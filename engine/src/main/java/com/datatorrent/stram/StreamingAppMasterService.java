@@ -1092,9 +1092,9 @@ public class StreamingAppMasterService extends CompositeService
         appDone = true;
       }
 
-      logger.info("Requested = {}", requestedResources.values());
-      logger.info("Allocated = {}", allocatedContainers.keySet());
-      logger.info("Current application state: loop=" + loopCounter + ", appDone=" + appDone + ", total=" + numTotalContainers + ", requested=" + numRequestedContainers + ", released=" + numReleasedContainers + ", completed=" + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated=" + allocatedContainers.size());
+      logger.debug("Requested = {}", requestedResources.values());
+      logger.debug("Allocated = {}", allocatedContainers.keySet());
+      logger.debug("Current application state: loop=" + loopCounter + ", appDone=" + appDone + ", total=" + numTotalContainers + ", requested=" + numRequestedContainers + ", released=" + numReleasedContainers + ", completed=" + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated=" + allocatedContainers.size());
 
       // monitor child containers
       dnmgr.monitorHeartbeat();
