@@ -294,6 +294,9 @@ public class StramLocalCluster implements Runnable, Controller
     if (dag.getAttributes().get(LogicalPlan.APPLICATION_PATH) == null) {
       dag.getAttributes().put(LogicalPlan.APPLICATION_PATH, pathUri);
     }
+    else {
+      pathUri = dag.getAttributes().get(LogicalPlan.APPLICATION_PATH);
+    }
     if (dag.getAttributes().get(OperatorContext.STORAGE_AGENT) == null) {
       dag.setAttribute(OperatorContext.STORAGE_AGENT, new AsyncFSStorageAgent(new Path(pathUri, LogicalPlan.SUBDIR_CHECKPOINTS).toString(), null));
     }
