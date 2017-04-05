@@ -826,7 +826,7 @@ public class StreamingAppMasterService extends CompositeService
               containerMemoryMax = (minMemoryMB - dag.getMasterMemoryMB()) / countContainersPerHost;
             }
             else {
-              containerMemoryMax = minMemoryMB / countContainersPerHost;
+              containerMemoryMax = minMemoryMB / (countContainersPerHost + 1);
             }
             containerMemoryMax -= containerMemoryMax % minMem;
 
