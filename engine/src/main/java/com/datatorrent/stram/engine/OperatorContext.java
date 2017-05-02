@@ -29,7 +29,7 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.StatsListener.OperatorRequest;
 import com.datatorrent.api.annotation.Stateless;
 
-import com.datatorrent.netlet.util.CircularBuffer;
+import com.celeral.netlet.util.CircularBuffer;
 import com.datatorrent.stram.api.BaseContext;
 import com.datatorrent.stram.api.StreamingContainerUmbilicalProtocol.ContainerStats;
 

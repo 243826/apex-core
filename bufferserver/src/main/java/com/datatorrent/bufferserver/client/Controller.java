@@ -26,7 +26,7 @@ import com.datatorrent.bufferserver.packet.PurgeRequestTuple;
 import com.datatorrent.bufferserver.packet.ResetRequestTuple;
 import com.datatorrent.bufferserver.packet.Tuple;
 import com.datatorrent.bufferserver.util.Codec;
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 
 /**
  * <p>Abstract Controller class.</p>

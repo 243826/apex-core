@@ -35,7 +35,7 @@ import com.datatorrent.bufferserver.packet.ResetWindowTuple;
 import com.datatorrent.bufferserver.support.Controller;
 import com.datatorrent.bufferserver.support.Publisher;
 import com.datatorrent.bufferserver.support.Subscriber;
-import com.datatorrent.netlet.DefaultEventLoop;
+import com.celeral.netlet.DefaultEventLoop;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;

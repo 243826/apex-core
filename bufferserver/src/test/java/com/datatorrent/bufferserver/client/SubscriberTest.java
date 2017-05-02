@@ -38,7 +38,7 @@ import com.datatorrent.bufferserver.server.Server;
 import com.datatorrent.bufferserver.support.Publisher;
 import com.datatorrent.bufferserver.support.Subscriber;
 import com.datatorrent.bufferserver.util.Codec;
-import com.datatorrent.netlet.DefaultEventLoop;
+import com.celeral.netlet.DefaultEventLoop;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;

@@ -20,7 +20,7 @@ package com.datatorrent.bufferserver.client;
 
 import java.security.AccessControlException;
 
-import com.datatorrent.netlet.AbstractLengthPrependerClient;
+import com.celeral.netlet.AbstractLengthPrependerClient;
 
 /**
  * <p>Auth Client class.</p>

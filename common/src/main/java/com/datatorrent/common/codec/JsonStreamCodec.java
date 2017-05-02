@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.api.StringCodec;
 import com.datatorrent.common.util.JacksonObjectMapperProvider;
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 
 /**
  * <p>JsonStreamCodec class.</p>

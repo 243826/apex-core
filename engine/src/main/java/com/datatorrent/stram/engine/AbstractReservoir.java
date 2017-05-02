@@ -34,8 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datatorrent.api.Sink;
-import com.datatorrent.netlet.util.CircularBuffer;
-import com.datatorrent.netlet.util.UnsafeBlockingQueue;
+import com.celeral.netlet.util.CircularBuffer;
+import com.celeral.netlet.util.UnsafeBlockingQueue;
 import com.datatorrent.stram.tuple.Tuple;
 
 import static java.lang.Thread.sleep;

@@ -32,8 +32,8 @@ import com.datatorrent.bufferserver.policy.Policy;
 import com.datatorrent.bufferserver.util.BitVector;
 import com.datatorrent.bufferserver.util.Codec;
 import com.datatorrent.bufferserver.util.SerializedData;
-import com.datatorrent.netlet.AbstractLengthPrependerClient;
-import com.datatorrent.netlet.EventLoop;
+import com.celeral.netlet.AbstractLengthPrependerClient;
+import com.celeral.netlet.EventLoop;
 
 /**
  * LogicalNode represents a logical node in a DAG<p>

@@ -446,8 +446,12 @@ public class PhysicalPlan implements Serializable
           }
 
           Set<PTOperator> inlineSet = oper.getGrouping(Locality.CONTAINER_LOCAL).getOperatorSet();
+
           if (!inlineSet.isEmpty()) {
+            // chetan: here check if it's parallel partition, if it's a parallel partition
+            // then only assign the container that belongs.
             // process inline operators
+
             for (PTOperator inlineOper : inlineSet) {
               setContainer(inlineOper, container);
               operatorContainerMap.put(inlineOper, container);

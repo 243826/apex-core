@@ -24,6 +24,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.celeral.netlet.EventLoop;
+import com.celeral.netlet.util.CircularBuffer;
+import com.celeral.netlet.util.Slice;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,9 +35,6 @@ import com.datatorrent.api.Sink;
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.bufferserver.client.Subscriber;
 import com.datatorrent.bufferserver.util.Codec;
-import com.datatorrent.netlet.EventLoop;
-import com.datatorrent.netlet.util.CircularBuffer;
-import com.datatorrent.netlet.util.Slice;
 import com.datatorrent.stram.codec.StatefulStreamCodec;
 import com.datatorrent.stram.codec.StatefulStreamCodec.DataStatePair;
 import com.datatorrent.stram.engine.ByteCounterStream;

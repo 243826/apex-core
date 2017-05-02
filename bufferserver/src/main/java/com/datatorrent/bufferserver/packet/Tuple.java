@@ -23,8 +23,8 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datatorrent.netlet.util.Slice;
-import com.datatorrent.netlet.util.VarInt;
+import com.celeral.netlet.util.Slice;
+import com.celeral.netlet.util.VarInt;
 
 /**
  * <p>Abstract Tuple class.</p>

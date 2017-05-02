@@ -51,11 +51,11 @@ import com.datatorrent.bufferserver.packet.SubscribeRequestTuple;
 import com.datatorrent.bufferserver.packet.Tuple;
 import com.datatorrent.bufferserver.storage.Storage;
 import com.datatorrent.common.util.NameableThreadFactory;
-import com.datatorrent.netlet.AbstractLengthPrependerClient;
-import com.datatorrent.netlet.DefaultEventLoop;
-import com.datatorrent.netlet.EventLoop;
-import com.datatorrent.netlet.Listener.ServerListener;
-import com.datatorrent.netlet.util.VarInt;
+import com.celeral.netlet.AbstractLengthPrependerClient;
+import com.celeral.netlet.DefaultEventLoop;
+import com.celeral.netlet.EventLoop;
+import com.celeral.netlet.Listener.ServerListener;
+import com.celeral.netlet.util.VarInt;
 
 /**
  * The buffer server application<p>
@@ -126,7 +126,7 @@ public class Server implements ServerListener
 
   public synchronized InetSocketAddress run(EventLoop eventloop)
   {
-    eventloop.start(null, port, this);
+    eventloop.start(new InetSocketAddress(port), this);
     while (address == null) {
       try {
         wait(20);
@@ -159,7 +159,7 @@ public class Server implements ServerListener
     }
 
     DefaultEventLoop eventloop = DefaultEventLoop.createEventLoop("alone");
-    eventloop.start(null, port, new Server(port));
+    eventloop.start(new InetSocketAddress(port), new Server(port));
     new Thread(eventloop).start();
   }
 
@@ -636,7 +636,7 @@ public class Server implements ServerListener
      * @return true
      */
     @Override
-    public boolean resumeReadIfSuspended()
+    public boolean resumeRead()
     {
       eventloop.submit(new Runnable()
       {

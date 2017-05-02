@@ -21,8 +21,8 @@ package com.datatorrent.bufferserver.util;
 import java.io.IOException;
 import java.util.HashMap;
 
-import com.datatorrent.netlet.DefaultEventLoop;
-import com.datatorrent.netlet.EventLoop;
+import com.celeral.netlet.DefaultEventLoop;
+import com.celeral.netlet.EventLoop;
 
 /**
  * <p>System class.</p>

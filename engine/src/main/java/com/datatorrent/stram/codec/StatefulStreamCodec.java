@@ -23,7 +23,7 @@
 package com.datatorrent.stram.codec;
 
 import com.datatorrent.api.StreamCodec;
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 
 /**
  * <p>StatefulStreamCodec interface.</p>

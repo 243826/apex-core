@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 import com.datatorrent.stram.codec.DefaultStatefulStreamCodec.ClassIdPair;
 import com.datatorrent.stram.codec.StatefulStreamCodec.DataStatePair;
 

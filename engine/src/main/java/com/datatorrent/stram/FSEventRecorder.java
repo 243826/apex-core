@@ -36,7 +36,7 @@ import com.google.common.base.Throwables;
 
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.common.codec.JsonStreamCodec;
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 import com.datatorrent.stram.api.StramEvent;
 import com.datatorrent.stram.client.EventsAgent;
 import com.datatorrent.stram.util.FSPartFileCollection;

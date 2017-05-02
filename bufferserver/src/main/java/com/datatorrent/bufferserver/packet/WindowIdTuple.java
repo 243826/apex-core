@@ -19,8 +19,8 @@
 package com.datatorrent.bufferserver.packet;
 
 
-import com.datatorrent.netlet.util.Slice;
-import com.datatorrent.netlet.util.VarInt;
+import com.celeral.netlet.util.Slice;
+import com.celeral.netlet.util.VarInt;
 
 /**
  * <p>WindowIdTuple class.</p>

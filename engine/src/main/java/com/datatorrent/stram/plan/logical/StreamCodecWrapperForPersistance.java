@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 
 import com.datatorrent.api.Partitioner.PartitionKeys;
 import com.datatorrent.api.StreamCodec;
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 import com.datatorrent.stram.plan.logical.LogicalPlan.InputPortMeta;
 
 /**

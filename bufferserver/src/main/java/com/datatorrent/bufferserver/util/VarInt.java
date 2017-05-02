@@ -22,7 +22,7 @@ package com.datatorrent.bufferserver.util;
  *
  * @since 3.2.0
  */
-public class VarInt extends com.datatorrent.netlet.util.VarInt
+public class VarInt extends com.celeral.netlet.util.VarInt
 {
   public static void read(SerializedData current)
   {

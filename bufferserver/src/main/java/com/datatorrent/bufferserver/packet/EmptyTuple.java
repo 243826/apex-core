@@ -18,7 +18,7 @@
  */
 package com.datatorrent.bufferserver.packet;
 
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 
 /**
  * <p>EmptyTuple class.</p>

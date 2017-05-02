@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
+
 import com.datatorrent.api.Attribute.AttributeMap;
 import com.datatorrent.api.Operator.ProcessingMode;
 import com.datatorrent.api.StringCodec.Class2String;
@@ -96,10 +98,11 @@ public interface Context
   {
     /**
      * Get the container JVM opts based on the operator(s) configuration.
+     * @param conf The current hadoop configuration object
      * @param operatorMetaList The list of operators that are assigned to the container
      * @return The JVM options for the container
      */
-    String getJVMOptions(List<DAG.OperatorMeta> operatorMetaList);
+    String getJVMOptions(Configuration conf, List<DAG.OperatorMeta> operatorMetaList);
   }
 
   /**

@@ -35,7 +35,7 @@ import com.datatorrent.api.Attribute.AttributeMap.DefaultAttributeMap;
 import com.datatorrent.api.Context;
 import com.datatorrent.api.StreamCodec;
 
-import com.datatorrent.netlet.EventLoop;
+import com.celeral.netlet.EventLoop;
 import com.datatorrent.stram.codec.DefaultStatefulStreamCodec;
 
 /**

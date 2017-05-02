@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datatorrent.bufferserver.util.SerializedData;
-import com.datatorrent.netlet.AbstractLengthPrependerClient;
+import com.celeral.netlet.AbstractLengthPrependerClient;
 
 /**
  * PhysicalNode represents one physical subscriber.

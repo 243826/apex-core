@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.datatorrent.api.Sink;
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.bufferserver.packet.PayloadTuple;
-import com.datatorrent.netlet.util.Slice;
+import com.celeral.netlet.util.Slice;
 import com.datatorrent.stram.engine.SweepableReservoir;
 
 /**
@@ -91,15 +91,17 @@ public class BufferServerSubscriberTest
       }
 
       @Override
-      public void suspendRead()
+      public boolean suspendRead()
       {
         logger.debug("read suspended");
+        return true;
       }
 
       @Override
-      public void resumeRead()
+      public boolean resumeRead()
       {
         logger.debug("read resumed");
+        return true;
       }
 
     };

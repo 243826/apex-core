@@ -244,7 +244,7 @@ public class LaunchContainerRunnable implements Runnable
       operatorMetaList.add(operator.getOperatorMeta());
     }
     Context.ContainerOptConfigurator containerOptConfigurator = dag.getAttributes().get(LogicalPlan.CONTAINER_OPTS_CONFIGURATOR);
-    jvmOpts = containerOptConfigurator.getJVMOptions(operatorMetaList);
+    jvmOpts = containerOptConfigurator.getJVMOptions(nmClient.getConfig(), operatorMetaList);
     jvmOpts = parseJvmOpts(jvmOpts, ((long)bufferServerMemory) * MB_TO_B);
     LOG.info("Jvm opts {} for container {}",jvmOpts,container.getId());
     vargs.add(jvmOpts);

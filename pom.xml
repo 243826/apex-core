@@ -313,7 +313,7 @@
                 </rules>
               </configuration>
             </execution>
-            <execution>
+            <!-- execution>
               <id>enforce-release-dependencies</id>
               <goals>
                 <goal>enforce</goal>
@@ -326,7 +326,7 @@
                   </requireReleaseDeps>
                 </rules>
               </configuration>
-            </execution>
+            </execution -->
           </executions>
         </plugin>
         <plugin>
@@ -364,47 +364,6 @@
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
           <version>0.11</version>
-        </plugin>
-        <plugin>
-          <groupId>com.github.siom79.japicmp</groupId>
-          <artifactId>japicmp-maven-plugin</artifactId>
-          <version>0.7.0</version>
-          <configuration>
-            <oldVersion>
-              <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>${project.artifactId}</artifactId>
-                <version>${project.old.version}</version>
-              </dependency>
-            </oldVersion>
-            <newVersion>
-              <file>
-                <path>${project.build.directory}/${project.artifactId}-${project.version}.jar</path>
-              </file>
-            </newVersion>
-            <parameter>
-              <onlyModified>true</onlyModified>
-              <accessModifier>protected</accessModifier>
-              <breakBuildBasedOnSemanticVersioning>true</breakBuildBasedOnSemanticVersioning>
-              <onlyBinaryIncompatible>false</onlyBinaryIncompatible>
-              <includeSynthetic>false</includeSynthetic>
-              <ignoreMissingClasses>true</ignoreMissingClasses>
-              <excludes>
-                <exclude>@org.apache.hadoop.classification.InterfaceStability$Evolving</exclude>
-                <exclude>@org.apache.hadoop.classification.InterfaceStability$Unstable</exclude>
-                <!-- com.ning:async-http-client upgrade -->
-                <exclude>com.datatorrent.common.util.PubSubWebSocketClient</exclude>
-              </excludes>
-            </parameter>
-          </configuration>
-          <executions>
-            <execution>
-              <phase>verify</phase>
-              <goals>
-                <goal>cmp</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
       </plugins>
     </pluginManagement>

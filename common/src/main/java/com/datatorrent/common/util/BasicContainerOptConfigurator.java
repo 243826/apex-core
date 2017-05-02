@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import org.apache.hadoop.conf.Configuration;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.DAG;
@@ -53,7 +55,7 @@ public class BasicContainerOptConfigurator implements Context.ContainerOptConfig
   private static final int KB_TO_B = 1024;
 
   @Override
-  public String getJVMOptions(List<DAG.OperatorMeta> operatorMetaList)
+  public String getJVMOptions(Configuration config, List<DAG.OperatorMeta> operatorMetaList)
   {
     Set<String> genericProperties = null;
     long xmx = 0;
@@ -62,7 +64,7 @@ public class BasicContainerOptConfigurator implements Context.ContainerOptConfig
     List<Map<String, Object>> jvmOptsList = Lists.newArrayList();
     for (DAG.OperatorMeta operatorMeta : operatorMetaList) {
       Map<String, Object> operatorMap = parseJvmOpts(operatorMeta.getValue(Context.OperatorContext.JVM_OPTIONS), operatorMeta.getValue(Context.OperatorContext.MEMORY_MB));
-      LOG.debug("property map for operator {}", operatorMap);
+      @SuppressWarnings("unchecked")
       Set<String> operatorPropertySet = (Set<String>)operatorMap.get(GENERIC);
       if (genericProperties == null) {
         genericProperties = operatorPropertySet;
@@ -155,4 +157,6 @@ public class BasicContainerOptConfigurator implements Context.ContainerOptConfig
     map.put(GENERIC, currentProperties);
     return map;
   }
+
+  private static final long serialVersionUID = 201704241710L;
 }
