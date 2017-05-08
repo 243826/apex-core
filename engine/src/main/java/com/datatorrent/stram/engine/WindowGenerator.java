@@ -204,13 +204,13 @@ public class WindowGenerator extends MuxReservoir implements Stream, Runnable
   @Override
   public void deactivate()
   {
-    ses.shutdown();
+    ses.shutdownNow();
   }
 
   private void handleException(Exception e)
   {
     if (e instanceof InterruptedException) {
-      ses.shutdown();
+      ses.shutdownNow();
     } else {
       throw new RuntimeException(e);
     }
