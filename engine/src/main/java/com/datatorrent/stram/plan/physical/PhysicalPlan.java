@@ -20,34 +20,21 @@ package com.datatorrent.stram.plan.physical;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.commons.lang.StringUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datatorrent.api.AffinityRule;
 import com.datatorrent.api.AffinityRule.Type;
@@ -239,9 +226,9 @@ public class PhysicalPlan implements Serializable
      * Return all partitions and unifiers, except MxN unifiers
      * @return
      */
-    private Collection<PTOperator> getAllOperators()
+    private ArrayList<PTOperator> getAllOperators()
     {
-      Collection<PTOperator> c = new ArrayList<>(partitions.size() + 1);
+      ArrayList<PTOperator> c = new ArrayList<>(partitions.size() + 1);
       c.addAll(partitions);
       for (StreamMapping ug : outputStreams.values()) {
         ug.addTo(c);
@@ -437,8 +424,32 @@ public class PhysicalPlan implements Serializable
     // assign operators to containers
     int groupCount = 0;
     Set<PTOperator> deployOperators = Sets.newHashSet();
-    for (Map.Entry<OperatorMeta, PMapping> e : logicalToPTOperator.entrySet()) {
-      for (PTOperator oper : e.getValue().getAllOperators()) {
+
+    Collection<PMapping> values = logicalToPTOperator.values();
+    PMapping[] toArray = values.toArray(new PMapping[values.size()]);
+    Arrays.sort(toArray, new Comparator<PMapping>()
+        {
+          @Override
+          public int compare(PMapping o1, PMapping o2)
+          {
+            return o1.logicalOperator.getName().compareTo(o2.logicalOperator.getName());
+          }
+
+        });
+
+    for (PMapping p: toArray) {
+      ArrayList<PTOperator> partitions = p.getAllOperators();
+      Collections.sort(partitions, new Comparator<PTOperator>()
+               {
+                 @Override
+                 public int compare(PTOperator o1, PTOperator o2)
+                 {
+                   return o1.id - o2.id;
+                 }
+
+               });
+
+      for (PTOperator oper : partitions) {
         if (oper.container == null) {
           PTContainer container = getContainer(groupCount++);
           if (!container.operators.isEmpty()) {
@@ -1405,12 +1416,13 @@ public class PhysicalPlan implements Serializable
     return oper;
   }
 
-  private void setLocalityGrouping(PMapping pnodes, PTOperator newOperator, LocalityPrefs localityPrefs, Locality ltype,String host)
+  private void setLocalityGrouping(PMapping pnodes, PTOperator newOperator, LocalityPrefs localityPrefs, Locality ltype, String host)
   {
     HostOperatorSet grpObj = newOperator.getGrouping(ltype);
     if (host != null) {
       grpObj.setHost(host);
     }
+
     Set<PTOperator> s = grpObj.getOperatorSet();
     s.add(newOperator);
     LocalityPref loc = localityPrefs.prefs.get(pnodes);
