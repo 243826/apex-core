@@ -1136,6 +1136,10 @@ public class StreamingContainerManager implements PlanContext
 
     // redeploy cycle for all affected operators
     LOG.info("Affected operators {}", ctx.visited);
+    if (ctx.visited == null || ctx.visited.isEmpty()) {
+      /* some kind of race condition, difficult to reproduce */
+      return;
+    }
     deploy(Collections.<PTContainer>emptySet(), ctx.visited, Sets.newHashSet(cs.container), ctx.visited);
   }
 
