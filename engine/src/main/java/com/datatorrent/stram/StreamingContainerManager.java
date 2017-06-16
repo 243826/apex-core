@@ -204,7 +204,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
   private FSEventRecorder eventRecorder;
   protected final Map<String, String> containerStopRequests = new ConcurrentHashMap<>();
   protected final ConcurrentLinkedQueue<ContainerStartRequest> containerStartRequests = new ConcurrentLinkedQueue<>();
-  protected boolean forcedShutdown = false;
+  protected boolean forcedShutdown;
   private final ConcurrentLinkedQueue<Runnable> eventQueue = new ConcurrentLinkedQueue<>();
   private final AtomicBoolean eventQueueProcessing = new AtomicBoolean();
   private final HashSet<PTContainer> pendingAllocation = Sets.newLinkedHashSet();
@@ -273,6 +273,10 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
 
   private void clearPendingHeartbeats(final Set<Integer> undeployOpers)
   {
+    if (beats == null) {
+      return;
+    }
+
     LinkedList<Integer> pendingOperators = new LinkedList<>(undeployOpers);
 
     HashSet<Integer> processed = new HashSet<>(undeployOpers);
@@ -1371,6 +1375,10 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
 
   public boolean filter(OperatorHeartbeat heartbeat)
   {
+    if (beats == null) {
+      return false;
+    }
+
     final ArrayList<OperatorStats> stats = heartbeat.windowStats;
     final int lastIndex = stats == null? -1: stats.size() - 1;
     if (lastIndex == -1) {
@@ -1407,6 +1415,10 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
 
   Collection<OperatorHeartbeat> getPendingHeartbeats(int operatorId)
   {
+    if (beats == null) {
+      return null;
+    }
+
     Heartbeats heartbeats = beats.get(operatorId);
     if (heartbeats.pending.isEmpty()) {
       return null;
@@ -1444,11 +1456,14 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
   @Override
   public void changedTo(Collection<PTOperator> unmodifiableCollection)
   {
+    @SuppressWarnings("unchecked")
+    Map<Integer, Heartbeats> localbeats = beats == null? Collections.EMPTY_MAP: beats;
+    
     HashMap<Integer, Heartbeats> newBeats = new HashMap<>(unmodifiableCollection.size());
 
     for (PTOperator operator: unmodifiableCollection) {
       Integer id = operator.getId();
-      Heartbeats heartbeats = this.beats.get(id);
+      Heartbeats heartbeats = localbeats.get(id);
 
       if (heartbeats == null) {
         heartbeats = new Heartbeats();
@@ -1969,9 +1984,6 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
         }
       }
 
-    }
-
-    for (PTOperator operator : sca.container.getOperators()) {
     }
 
     ContainerHeartbeatResponse rsp = getHeartbeatResponse(sca);
