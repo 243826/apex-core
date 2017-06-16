@@ -143,22 +143,6 @@ public interface StreamingContainerUmbilicalProtocol extends VersionedProtocol
     }
 
     /**
-     * Number of milliseconds elapsed since last heartbeat. Other statistics
-     * relative to this interval.
-     */
-    public long intervalMs;
-
-    public long getIntervalMs()
-    {
-      return intervalMs;
-    }
-
-    public void setIntervalMs(long intervalMs)
-    {
-      this.intervalMs = intervalMs;
-    }
-
-    /**
      * State of the operator (processing, idle etc).
      */
     public enum DeployState
@@ -184,6 +168,14 @@ public interface StreamingContainerUmbilicalProtocol extends VersionedProtocol
      * Return the response of the request
      */
     public ArrayList<StatsListener.OperatorResponse> requestResponse;
+
+    @Override
+    public String toString()
+    {
+      return "OperatorHeartbeat{" + "windowStats=" + windowStats + ", nodeId=" + nodeId + ", generatedTms=" + generatedTms + ", state=" + state + ", requestResponse=" + requestResponse + '}';
+    }
+
+    
   }
 
   class ContainerStats implements Stats

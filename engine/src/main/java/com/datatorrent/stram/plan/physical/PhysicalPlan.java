@@ -747,6 +747,12 @@ public class PhysicalPlan implements Serializable
     }
   }
 
+
+  public interface CollectionChangeListener<T>
+  {
+    public void changedTo(Collection<T> unmodifiableCollection);
+  }
+
   private void initPartitioning(PMapping m, int partitionCnt)
   {
     Operator operator = m.logicalOperator.getOperator();
@@ -798,9 +804,22 @@ public class PhysicalPlan implements Serializable
       operatorIdToPartition.put(p.getId(), partition);
     }
 
+    if (physicalOperatorSetChangeListener != null) {
+      physicalOperatorSetChangeListener.changedTo(Collections.unmodifiableCollection(allOperators.values()));
+    }
+
     if (partitioner != null) {
       partitioner.partitioned(operatorIdToPartition);
     }
+  }
+
+  private transient CollectionChangeListener<PTOperator> physicalOperatorSetChangeListener;
+
+  // this method is introduced for a stopgap measure to process the heartbeats systematically
+  // should be replaced with a robust implementation
+  public void setPhysicalOperatorSetChangeListener(CollectionChangeListener<PTOperator> listener)
+  {
+    physicalOperatorSetChangeListener = listener;
   }
 
   private class RepartitionContext extends PartitioningContextImpl
@@ -1053,7 +1072,10 @@ public class PhysicalPlan implements Serializable
       this.ctx.recordEventAsync(ev);
     }
 
+    physicalOperatorSetChangeListener.changedTo(Collections.unmodifiableCollection(allOperators.values()));
+
     partitioner.partitioned(mainPC.operatorIdToPartition);
+
   }
 
   private void updateStreamMappings(PMapping m)

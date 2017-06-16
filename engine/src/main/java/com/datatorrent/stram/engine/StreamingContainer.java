@@ -650,14 +650,12 @@ public class StreamingContainer extends YarnContainerMain
 
       ContainerHeartbeatResponse rsp;
       do {
-
         ContainerStats stats = new ContainerStats(containerId);
         // gather heartbeat info for all operators
         for (Map.Entry<Integer, Node<?>> e : nodes.entrySet()) {
           OperatorHeartbeat hb = new OperatorHeartbeat();
           hb.setNodeId(e.getKey());
           hb.setGeneratedTms(currentTime);
-          hb.setIntervalMs(heartbeatIntervalMillis);
           if (e.getValue().commandResponse.size() > 0) {
             BlockingQueue<StatsListener.OperatorResponse> commandResponse = e.getValue().commandResponse;
             ArrayList<StatsListener.OperatorResponse> response = new ArrayList<>();

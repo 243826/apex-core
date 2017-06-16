@@ -1082,6 +1082,7 @@ public class StreamingAppMasterService extends CompositeService
           lstats.blackListAdditionTime = timeStamp;
         }
       }
+      
       if (dnmgr.forcedShutdown) {
         logger.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
         finalStatus = FinalApplicationStatus.FAILED;

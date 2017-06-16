@@ -21,9 +21,6 @@ package com.datatorrent.stram;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.ipc.ProtocolSignature;
@@ -35,6 +32,9 @@ import org.apache.hadoop.security.authorize.Service;
 import org.apache.hadoop.security.token.SecretManager;
 import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datatorrent.stram.api.StramEvent.ContainerErrorEvent;
 import com.datatorrent.stram.api.StramEvent.OperatorErrorEvent;
@@ -51,8 +51,7 @@ import com.datatorrent.stram.webapp.OperatorInfo;
  */
 public class StreamingContainerParent extends org.apache.hadoop.service.CompositeService implements StreamingContainerUmbilicalProtocol
 {
-
-  private static final Logger LOG = LoggerFactory.getLogger(StreamingContainerParent.class);
+  private static final Logger logger = LoggerFactory.getLogger(StreamingContainerParent.class);
   private Server server;
   private SecretManager<? extends TokenIdentifier> tokenSecretManager = null;
   private InetSocketAddress address;
@@ -90,37 +89,38 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   protected void startRpcServer()
   {
     Configuration conf = getConfig();
-    LOG.info("Config: " + conf);
-    LOG.info("Listener thread count " + listenerThreadCount);
+    logger.info("Config: " + conf);
+    logger.info("Listener thread count " + listenerThreadCount);
     try {
       server = new RPC.Builder(conf).setProtocol(StreamingContainerUmbilicalProtocol.class).setInstance(this)
-          .setBindAddress("0.0.0.0").setPort(0).setNumHandlers(listenerThreadCount).setSecretManager(tokenSecretManager)
-          .setVerbose(false).build();
+              .setBindAddress("0.0.0.0").setPort(0).setNumHandlers(listenerThreadCount).setSecretManager(tokenSecretManager)
+              .setVerbose(false).build();
 
       // Enable service authorization?
       if (conf.getBoolean(
-          CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION,
-          false)) {
+              CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHORIZATION,
+              false)) {
         //refreshServiceAcls(conf, new MRAMPolicyProvider());
         server.refreshServiceAcl(conf, new PolicyProvider()
-        {
+                         {
 
-          @Override
-          public Service[] getServices()
-          {
-            return (new Service[]{
-                new Service(StreamingContainerUmbilicalProtocol.class
-                    .getName(), StreamingContainerUmbilicalProtocol.class)
-            });
-          }
+                           @Override
+                           public Service[] getServices()
+                           {
+                             return (new Service[] {
+                               new Service(StreamingContainerUmbilicalProtocol.class
+                               .getName(), StreamingContainerUmbilicalProtocol.class)
+                             });
+                           }
 
-        });
+                         });
       }
 
       server.start();
       this.address = NetUtils.getConnectAddress(server);
-      LOG.info("Container callback server listening at " + this.address);
-    } catch (IOException e) {
+      logger.info("Container callback server listening at " + this.address);
+    }
+    catch (IOException e) {
       throw new YarnRuntimeException(e);
     }
   }
@@ -142,14 +142,14 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   }
 
   void refreshServiceAcls(Configuration configuration,
-      PolicyProvider policyProvider)
+                          PolicyProvider policyProvider)
   {
     this.server.refreshServiceAcl(configuration, policyProvider);
   }
 
   @Override
   public ProtocolSignature getProtocolSignature(String protocol,
-      long clientVersion, int clientMethodsHash) throws IOException
+                                                long clientVersion, int clientMethodsHash) throws IOException
   {
     return ProtocolSignature.getProtocolSignature(this, protocol, clientVersion, clientMethodsHash);
   }
@@ -163,7 +163,7 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   @Override
   public void log(String containerId, String msg) throws IOException
   {
-    LOG.info("child msg: {} context: {}", msg, dagManager.getContainerAgent(containerId).container);
+    logger.info("child msg: {} context: {}", msg, dagManager.getContainerAgent(containerId).container);
   }
 
   @Override
@@ -171,8 +171,9 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   {
     if (operators == null || operators.length == 0) {
       dagManager.recordEventAsync(new ContainerErrorEvent(containerId, msg));
-    } else {
-      for (int operator : operators) {
+    }
+    else {
+      for (int operator: operators) {
         OperatorInfo operatorInfo = dagManager.getOperatorInfo(operator);
         if (operatorInfo != null) {
           dagManager.recordEventAsync(new OperatorErrorEvent(operatorInfo.name, operator, containerId, msg));
@@ -181,14 +182,15 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
     }
     try {
       log(containerId, msg);
-    } catch (IOException ex) {
+    }
+    catch (IOException ex) {
       // ignore
     }
   }
 
   @Override
   public StreamingContainerContext getInitContext(String containerId)
-      throws IOException
+          throws IOException
   {
     StreamingContainerAgent sca = dagManager.getContainerAgent(containerId);
 
@@ -203,7 +205,7 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
     // For now using SecureExecutor work load. Also change sig to throw Exception
     long now = System.currentTimeMillis();
     if (msg.sentTms - now > 50) {
-      LOG.debug("Child container heartbeat sent time for {} ({}) is greater than the receive timestamp in AM ({}). Please make sure the clocks are in sync", msg.getContainerId(), msg.sentTms, now);
+      logger.debug("Child container heartbeat sent time for {} ({}) is greater than the receive timestamp in AM ({}). Please make sure the clocks are in sync", msg.getContainerId(), msg.sentTms, now);
     }
     //LOG.debug("RPC latency from child container {} is {} ms (according to system clocks)", msg.getContainerId(),
     // now - msg.sentTms);
@@ -217,9 +219,11 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
         {
           return dagManager.processHeartbeat(fmsg);
         }
+
       });
-    } catch (IOException ex) {
-      LOG.error("Error processing heartbeat", ex);
+    }
+    catch (IOException ex) {
+      logger.error("Error processing heartbeat", ex);
       return null;
     }
   }
