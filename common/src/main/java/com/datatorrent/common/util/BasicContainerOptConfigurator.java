@@ -44,7 +44,7 @@ import com.datatorrent.api.DAG;
  */
 public class BasicContainerOptConfigurator implements Context.ContainerOptConfigurator
 {
-  private static final Logger LOG = LoggerFactory.getLogger(BasicContainerOptConfigurator.class);
+  private static final Logger logger = LoggerFactory.getLogger(BasicContainerOptConfigurator.class);
   private static final String XMX = "-Xmx";
   private static final String XMS = "-Xms";
   private static final String XSS = "-Xss";
@@ -90,6 +90,7 @@ public class BasicContainerOptConfigurator implements Context.ContainerOptConfig
         xss += getOptValue(value);
       }
     }
+    
     StringBuilder builder = new StringBuilder(" ");
     builder.append(XMX).append(xmx);
     if (xms != 0) {
