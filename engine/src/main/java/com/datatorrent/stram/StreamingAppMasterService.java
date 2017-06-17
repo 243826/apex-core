@@ -792,51 +792,58 @@ public class StreamingAppMasterService extends CompositeService
             }
           }
 
-          logger.info("Evaluating Degraded Mode: {}/{}", countHealthyHosts, countPreviousNode);
-
-          if (countHealthyHosts != countPreviousNode) {
-            pendingContainerStartRequests.clear();
-
+          if (countHealthyHosts == 0) {
             /**
-             * there may be some requested resources which are asking for previous
-             * memory. We need to tell them to change their demands.
-             *
+             * Noticed this happening when resource manager failed over during getNodeReports call above.
+             * The getNodeReports documentation says it should have resulted in an exception, I only saw
+             * info level log about swallowed exception in Hadoop.
              */
-            for (MutablePair<Integer, ContainerRequest> resource : requestedResources.values()) {
-              logger.info("Setting the loop value for {} from {} to {}", resource.right, resource.left, 0);
-              resource.left = 0;
-            }
+            logger.warn("Resource Manager reported 0 healthy hosts! Assuming previous healthy hosts: {}", countPreviousNode);
+          }
+          else {
+            if (countHealthyHosts != countPreviousNode) {
+              logger.info("Proceeding with reallocation of containers: {}/{}", countHealthyHosts, countPreviousNode);
 
-            for (String containerId : allocatedContainers.keySet()) {
-              logger.info("Requesting stop container: {}", containerId);
-              dnmgr.stopContainer(containerId);
-            }
+              pendingContainerStartRequests.clear();
 
-            int countContainersPerHost = countContainers / countHealthyHosts;
-            logger.debug("countContainersPerHost = {} countContainers = {} countHealthyHosts = {} minMemoryMB = {} MasterMemoryMB = {}",
-                     countContainersPerHost,
-                     countContainers,
-                     countHealthyHosts,
-                     minMemoryMB,
-                     dag.getMasterMemoryMB()
-            );
+              /**
+               * there may be some requested resources which are asking for previous
+               * memory. We need to tell them to change their demands.
+               *
+               */
+              for (MutablePair<Integer, ContainerRequest> resource : requestedResources.values()) {
+                resource.left = 0;
+              }
 
-            int containerMemoryMax;
-            if (countContainers % countHealthyHosts == 0) {
-              containerMemoryMax = (minMemoryMB - dag.getMasterMemoryMB()) / countContainersPerHost;
-            }
-            else {
-              containerMemoryMax = minMemoryMB / (countContainersPerHost + 1);
-            }
-            containerMemoryMax -= containerMemoryMax % minMem;
+              for (String containerId : allocatedContainers.keySet()) {
+                dnmgr.stopContainer(containerId);
+              }
 
-            resourceRequestor.setMaximumMemory(containerMemoryMax);
-            countPreviousNode = countHealthyHosts;
+              int countContainersPerHost = countContainers / countHealthyHosts;
+              logger.debug("countContainersPerHost = {} countContainers = {} countHealthyHosts = {} minMemoryMB = {} MasterMemoryMB = {}",
+                       countContainersPerHost,
+                       countContainers,
+                       countHealthyHosts,
+                       minMemoryMB,
+                       dag.getMasterMemoryMB()
+              );
+
+              int containerMemoryMax;
+              if (countContainers % countHealthyHosts == 0) {
+                containerMemoryMax = (minMemoryMB - dag.getMasterMemoryMB()) / countContainersPerHost;
+              }
+              else {
+                containerMemoryMax = minMemoryMB / (countContainersPerHost + 1);
+              }
+              containerMemoryMax -= containerMemoryMax % minMem;
+
+              resourceRequestor.setMaximumMemory(containerMemoryMax);
+              countPreviousNode = countHealthyHosts;
+            }
           }
 
+          resourceRequestor.updateNodeReports(nodeReports);
         }
-
-        resourceRequestor.updateNodeReports(nodeReports);
       }
 
       Runnable r;
@@ -1058,10 +1065,17 @@ public class StreamingAppMasterService extends CompositeService
           numCompletedContainers.incrementAndGet();
           logger.info("Container completed successfully." + ", containerId=" + containerStatus.getContainerId());
           // Reset counter for node failure, if exists
-          String hostname = allocatedContainer.container.getNodeId().getHost();
-          NodeFailureStats lstats = failedContainerNodesMap.get(hostname);
-          if (lstats != null) {
-            lstats.failureCount = 0;
+
+          /**
+           * noticed that this is possible if the RM failover happens while it's processing
+           * completed containers. -- Chetan
+           */
+          if (allocatedContainer != null) {
+            String hostname = allocatedContainer.container.getNodeId().getHost();
+            NodeFailureStats lstats = failedContainerNodesMap.get(hostname);
+            if (lstats != null) {
+              lstats.failureCount = 0;
+            }
           }
         }
 
@@ -1082,20 +1096,24 @@ public class StreamingAppMasterService extends CompositeService
           lstats.blackListAdditionTime = timeStamp;
         }
       }
-      
+
+      if (dnmgr.isOkayToShutdown() || dnmgr.hasDAGShutdown()) {
+        logger.info("Wrapping up as the DAG has terminated successfully; Buhbye!");
+        finalStatus = FinalApplicationStatus.SUCCEEDED;
+        appDone = true;
+      }
+
+      logger.info("Current application state: loop=" + loopCounter + ", total=" + numTotalContainers + ", requested=" + numRequestedContainers + ", released=" + numReleasedContainers + ", completed=" + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated=" + allocatedContainers.size());
+
       if (dnmgr.forcedShutdown) {
         logger.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
         finalStatus = FinalApplicationStatus.FAILED;
         appDone = true;
       } else if (allocatedContainers.isEmpty() && numRequestedContainers == 0 && dnmgr.containerStartRequests.isEmpty()) {
-        logger.debug("Exiting as no more containers are allocated or requested");
+        logger.info("Exiting as no more containers are allocated or requested");
         finalStatus = FinalApplicationStatus.SUCCEEDED;
         appDone = true;
       }
-
-      logger.debug("Requested = {}", requestedResources.values());
-      logger.debug("Allocated = {}", allocatedContainers.keySet());
-      logger.debug("Current application state: loop=" + loopCounter + ", appDone=" + appDone + ", total=" + numTotalContainers + ", requested=" + numRequestedContainers + ", released=" + numReleasedContainers + ", completed=" + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated=" + allocatedContainers.size());
 
       // monitor child containers
       dnmgr.monitorHeartbeat();
