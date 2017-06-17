@@ -1367,6 +1367,7 @@ public class PhysicalPlan implements Serializable
    */
   public void removeTerminatedPartition(PTOperator p)
   {
+    LOG.debug("removing partition {}", p);
     // keep track of downstream operators for cascading remove
     Set<PTOperator> downstreamOpers = new HashSet<>(p.outputs.size());
     for (PTOutput out : p.outputs) {
@@ -1379,6 +1380,8 @@ public class PhysicalPlan implements Serializable
       List<PTOperator> copyPartitions = Lists.newArrayList(currentMapping.partitions);
       copyPartitions.remove(p);
       removePartition(p, currentMapping);
+
+      LOG.debug("new partitions after removal = {}", copyPartitions);
       currentMapping.partitions = copyPartitions;
     }
     else {
@@ -1391,6 +1394,7 @@ public class PhysicalPlan implements Serializable
         removeTerminatedPartition(dop);
       }
     }
+
     deployChanges();
   }
 
@@ -1403,6 +1407,8 @@ public class PhysicalPlan implements Serializable
    */
   private void removePartition(PTOperator oper, PMapping operatorMapping)
   {
+
+    LOG.debug("remove parition {}", oper);
     // remove any parallel partition
     for (PTOutput out : oper.outputs) {
       // copy list as it is modified by recursive remove
@@ -1677,9 +1683,9 @@ public class PhysicalPlan implements Serializable
    * @param operators
    * @return
    */
-  public Set<PTOperator> getDependents(Collection<PTOperator> operators)
+  public LinkedHashSet<PTOperator> getDependents(Collection<PTOperator> operators)
   {
-    Set<PTOperator> visited = new LinkedHashSet<>();
+    LinkedHashSet<PTOperator> visited = new LinkedHashSet<>();
     if (operators != null) {
       for (PTOperator operator : operators) {
         getDeps(operator, visited);
@@ -1689,9 +1695,17 @@ public class PhysicalPlan implements Serializable
     return visited;
   }
 
-  private Set<PTOperator> getDependentPersistOperators(Collection<PTOperator> operators)
+  public LinkedHashSet<PTOperator> getDependents(PTOperator operator)
   {
-    Set<PTOperator> persistOperators = new LinkedHashSet<>();
+    LinkedHashSet<PTOperator> visited = new LinkedHashSet<>();
+    getDeps(operator, visited);
+    visited.addAll(getDependentPersistOperators(operator));
+    return visited;
+  }
+
+  private LinkedHashSet<PTOperator> getDependentPersistOperators(Collection<PTOperator> operators)
+  {
+    LinkedHashSet<PTOperator> persistOperators = new LinkedHashSet<>();
     if (operators != null) {
       for (PTOperator operator : operators) {
         for (PTInput in : operator.inputs) {
@@ -1713,6 +1727,29 @@ public class PhysicalPlan implements Serializable
     }
     return persistOperators;
   }
+
+  private LinkedHashSet<PTOperator> getDependentPersistOperators(PTOperator operator)
+  {
+    LinkedHashSet<PTOperator> persistOperators = new LinkedHashSet<>();
+    for (PTInput in : operator.inputs) {
+      if (in.logicalStream.getPersistOperator() != null) {
+        for (InputPortMeta inputPort : in.logicalStream.getSinksToPersist()) {
+          if (inputPort.getOperatorWrapper().equals(operator.operatorMeta)) {
+            // Redeploy the stream wide persist operator only if the current sink is being persisted
+            persistOperators.addAll(getOperators(in.logicalStream.getPersistOperator()));
+            break;
+          }
+        }
+      }
+      for (Map.Entry<InputPortMeta, OperatorMeta> entry : in.logicalStream.sinkSpecificPersistOperatorMap.entrySet()) {
+        // Redeploy sink specific persist operators
+        persistOperators.addAll(getOperators(entry.getValue()));
+      }
+    }
+
+    return persistOperators;
+  }
+
 
   /**
    * Add logical operator to the plan. Assumes that upstream operators have been added before.
