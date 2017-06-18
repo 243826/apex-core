@@ -703,6 +703,10 @@ public class StreamingContainer extends YarnContainerMain
 
         processHeartbeatResponse(rsp);
 
+        if (rsp.shutdown) {
+          break;
+        }
+
         if (rsp.hasPendingRequests) {
           logger.info("Waiting for pending request.");
           synchronized (this.heartbeatTrigger) {
