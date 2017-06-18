@@ -233,6 +233,7 @@ public class PTOperator implements java.io.Serializable
 
   PTOperator(PhysicalPlan plan, int id, String name, OperatorMeta om)
   {
+    this.state = State.INACTIVE;
     this.checkpoints = new LinkedList<>();
     this.plan = plan;
     this.name = name;
@@ -241,7 +242,7 @@ public class PTOperator implements java.io.Serializable
     this.stats = new OperatorStatus(this.id, om);
   }
 
-  private volatile PTOperator.State state = State.INACTIVE;
+  private volatile PTOperator.State state;
   private final PhysicalPlan plan;
   PTContainer container;
   final LogicalPlan.OperatorMeta operatorMeta;
@@ -490,14 +491,10 @@ public class PTOperator implements java.io.Serializable
 
   }
 
-  /**
-   *
-   * @return String
-   */
   @Override
   public String toString()
   {
-    return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("id", id).append("name", name).toString();
+    return "PTOperator{" + "state=" + state + ", id=" + id + ", name=" + name + '}';
   }
 
 }
