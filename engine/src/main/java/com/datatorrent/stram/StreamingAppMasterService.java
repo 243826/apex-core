@@ -698,14 +698,12 @@ public class StreamingAppMasterService extends CompositeService
       clientRMService.stop();
     }
 
-    int containerCount = 1;
     int minMemoryMB = Integer.MAX_VALUE;
     for (NodeReport report : clientRMService.getNodeReports(NodeState.RUNNING)) {
       int mem = report.getCapability().getMemory();
       if (mem < minMemoryMB) {
         minMemoryMB = mem;
       }
-      containerCount++;
     }
 
     logger.info("Starting ApplicationMaster");
@@ -734,8 +732,7 @@ public class StreamingAppMasterService extends CompositeService
     resourceRequestor.setMinimumMemory(minMem);
     resourceRequestor.setMaximumMemory(maxMem);
 
-    int countContainers       = dag.getMaxContainerCount();
-    dag.setMaxContainerCount(containerCount);
+    int countContainers = dag.getMaxContainerCount();
 
     long blacklistRemovalTime = dag.getValue(DAGContext.BLACKLISTED_NODE_REMOVAL_TIME_MILLIS);
     int maxConsecutiveContainerFailures = dag.getValue(DAGContext.MAX_CONSECUTIVE_CONTAINER_FAILURES_FOR_BLACKLIST);
