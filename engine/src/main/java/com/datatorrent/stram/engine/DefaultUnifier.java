@@ -23,7 +23,7 @@ import java.io.Serializable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datatorrent.api.Context.OperatorContext;
+import com.datatorrent.api.Context;
 import com.datatorrent.api.DefaultOutputPort;
 import com.datatorrent.api.Operator.Unifier;
 import com.datatorrent.api.annotation.Stateless;
@@ -42,27 +42,44 @@ public class DefaultUnifier implements Unifier<Object>, Serializable
   @Override
   public void process(Object tuple)
   {
-    outputPort.emit(tuple);
+    long t = System.currentTimeMillis();
+    try {
+      outputPort.emit(tuple);
+    }
+    catch (Throwable th) {
+      logger.error("Unifier emit failed on {}", tuple, th);
+      throw com.celeral.netlet.util.DTThrowable.wrapIfChecked(th);
+    }
+    finally {
+      t = System.currentTimeMillis() - t;
+      if (t > 1000L) {
+        logger.debug("Unifier emit took {}ms for {}", t, tuple);
+      }
+    }
   }
 
   @Override
   public void beginWindow(long windowId)
   {
+    logger.trace("window begun!");
   }
 
   @Override
   public void endWindow()
   {
+    logger.trace("window ended!");
   }
 
   @Override
-  public void setup(OperatorContext context)
+  public void setup(Context.OperatorContext context)
   {
+    logger.debug("setup done!");
   }
 
   @Override
   public void teardown()
   {
+    logger.debug("Operator torn down");
   }
 
   @SuppressWarnings("unused")
