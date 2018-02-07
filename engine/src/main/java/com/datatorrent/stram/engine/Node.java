@@ -342,13 +342,15 @@ public abstract class Node<OPERATOR extends Operator> implements Component<Opera
 
   protected void emitEndStream()
   {
-    // logger.debug("{} sending EndOfStream", this);
     /*
      * since we are going away, we should let all the downstream operators know that.
      */
     EndStreamTuple est = new EndStreamTuple(currentWindowId);
+    logger.info("Sending {} to {}", est, outputs);
     for (final Sink<Object> output : outputs.values()) {
-      output.put(est);
+      for (int i = 0; i < 100; i++) {
+        output.put(est);
+      }
     }
     controlTupleCount++;
   }

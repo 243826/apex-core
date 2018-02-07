@@ -58,6 +58,7 @@ import com.datatorrent.stram.tuple.Tuple;
  */
 public class BufferServerSubscriber extends Subscriber implements ByteCounterStream
 {
+
   private boolean suspended;
   private long baseSeconds;
   protected StreamCodec<Object> serde;
@@ -98,7 +99,7 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
     eventloop = context.get(StreamContext.EVENT_LOOP);
     eventloop.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, this);
 
-    logger.debug("Registering subscriber: id={} upstreamId={} streamLogicalName={} windowId={} mask={} partitions={} server={}", new Object[] {context.getSinkId(), context.getSourceId(), context.getId(), Codec.getStringWindowId(context.getFinishedWindowId()), context.getPartitionMask(), context.getPartitions(), context.getBufferServerAddress()});
+    logger.debug("Registering subscriber: id={} upstreamId={} streamLogicalName={} windowId={} mask={} partitions={} server={}", new Object[]{context.getSinkId(), context.getSourceId(), context.getId(), Codec.getStringWindowId(context.getFinishedWindowId()), context.getPartitionMask(), context.getPartitions(), context.getBufferServerAddress()});
     activate(null, context.getId() + '/' + context.getSinkId(), context.getSourceId(), context.getPartitionMask(), context.getPartitions(), context.getFinishedWindowId(), freeFragments.capacity());
   }
 
@@ -108,7 +109,8 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
     Slice f;
     if (freeFragments.isEmpty()) {
       f = new Slice(buffer, offset, length);
-    } else {
+    }
+    else {
       f = freeFragments.pollUnsafe();
       f.buffer = buffer;
       f.offset = offset;
@@ -134,11 +136,13 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
   {
     StreamCodec<?> codec = context.get(StreamContext.CODEC);
     if (codec == null) {
-      statefulSerde = ((StatefulStreamCodec<Object>)StreamContext.CODEC.defaultValue).newInstance();
-    } else if (codec instanceof StatefulStreamCodec) {
-      statefulSerde = ((StatefulStreamCodec<Object>)codec).newInstance();
-    } else {
-      serde = (StreamCodec<Object>)codec;
+      statefulSerde = ((StatefulStreamCodec<Object>) StreamContext.CODEC.defaultValue).newInstance();
+    }
+    else if (codec instanceof StatefulStreamCodec) {
+      statefulSerde = ((StatefulStreamCodec<Object>) codec).newInstance();
+    }
+    else {
+      serde = (StreamCodec<Object>) codec;
     }
     baseSeconds = context.getFinishedWindowId() & 0xffffffff00000000L;
   }
@@ -179,7 +183,7 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
   {
     BufferReservoir r = reservoirMap.get(id);
     if (r == null) {
-      reservoirMap.put(id, r = new BufferReservoirForPersistStream(capacity, (StreamCodecWrapperForPersistance<Object>)streamCodec));
+      reservoirMap.put(id, r = new BufferReservoirForPersistStream(capacity, (StreamCodecWrapperForPersistance<Object>) streamCodec));
       BufferReservoir[] newReservoirs = new BufferReservoir[reservoirs.length + 1];
       newReservoirs[reservoirs.length] = r;
       for (int i = reservoirs.length; i-- > 0;) {
@@ -204,7 +208,7 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
       BufferReservoir[] newReservoirs = new BufferReservoir[reservoirs.length - 1];
 
       int j = 0;
-      for (BufferReservoir reservoir: reservoirs) {
+      for (BufferReservoir reservoir : reservoirs) {
         if (reservoir != r) {
           newReservoirs[j++] = reservoir;
         }
@@ -263,7 +267,8 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
     {
       try {
         return this.sink;
-      } finally {
+      }
+      finally {
         this.sink = sink;
       }
     }
@@ -276,7 +281,8 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
         for (int i = 0; i < size; i++) {
           if (peekUnsafe() instanceof Tuple) {
             count += i;
-            return (Tuple)peekUnsafe();
+            logger.info("BS Subscriber : {} -> {}", BufferServerSubscriber.this, peekUnsafe());
+            return (Tuple) peekUnsafe();
           }
           sink.put(pollUnsafe());
         }
@@ -320,7 +326,7 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
               continue;
 
             case RESET_WINDOW:
-              baseSeconds = (long)data.getBaseSeconds() << 32;
+              baseSeconds = (long) data.getBaseSeconds() << 32;
               if (lastWindowId < WindowGenerator.MAX_WINDOW_ID) {
                 freeFragments.offer(fm);
                 continue;
@@ -375,7 +381,8 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
       Object o;
       if (statefulSerde == null) {
         o = serde.fromByteArray(data.getData());
-      } else {
+      }
+      else {
         dsp.data = data.getData();
         o = statefulSerde.fromDataStatePair(dsp);
       }
@@ -387,7 +394,8 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
     {
       try {
         return count;
-      } finally {
+      }
+      finally {
         if (reset) {
           count = 0;
         }

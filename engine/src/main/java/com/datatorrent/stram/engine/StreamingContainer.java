@@ -672,7 +672,7 @@ public class StreamingContainer extends YarnContainerMain
           } else if (failedNodes.contains(hb.nodeId)) {
             hb.setState(DeployState.FAILED);
           } else {
-            logger.debug("Reporting SHUTDOWN state because thread is {} and failedNodes is {}", context.getThread(), failedNodes);
+            logger.info("Reporting SHUTDOWN state because thread is {} and failedNodes is {}", context.getThread(), failedNodes);
             hb.setState(DeployState.SHUTDOWN);
           }
 
@@ -693,6 +693,7 @@ public class StreamingContainer extends YarnContainerMain
 
         msg.stackTrace = stackTrace;
 
+        logger.info("SC sending heartbeat {}", msg);
         rsp = umbilical.processHeartbeat(msg);
 
         if (rsp.stackTraceRequired) {

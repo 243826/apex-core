@@ -1417,7 +1417,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
   public boolean filter(OperatorHeartbeat heartbeat)
   {
     Heartbeats heartbeats = beats.get(heartbeat.nodeId);
-    logger.debug("filtering heartbeats {} when beats = {}", heartbeat, beats.get(heartbeat.nodeId));
+    logger.info("filtering heartbeats {} when beats = {}", heartbeat, beats.get(heartbeat.nodeId));
 
     final ArrayList<OperatorStats> stats = heartbeat.windowStats;
     final int lastIndex = stats == null ? -1 : stats.size() - 1;
@@ -1446,7 +1446,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
 
     boolean allClear = true;
     for (Integer operatorId : heartbeats.dependees) {
-      logger.debug("non active window Id {} and parent {}/{}", nonActiveWindowId, operatorId, beats.get(operatorId).mostRecentWindowId);
+      logger.info("non active window Id {} and parent {}/{}", nonActiveWindowId, operatorId, beats.get(operatorId).mostRecentWindowId);
       if (beats.get(operatorId).mostRecentWindowId < nonActiveWindowId) {
         allClear = false;
         break;
@@ -1463,7 +1463,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
       else {
         heartbeats.state = heartbeat.state;
       }
-      logger.debug("final processing 3 {}", heartbeat);
+      logger.info("final processing 3 {}", heartbeat);
       return false;
     }
 
@@ -1798,7 +1798,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
         }
       }
 
-      //LOG.debug("heartbeat {} {}/{} {}", oper, oper.getState(), shb.getState(), oper.getContainer().getExternalId());
+      logger.info("heartbeat {} {}/{} {}", oper, oper.getState(), shb.getState(), oper.getContainer().getExternalId());
       if (!filter(shb) && !(oper.getState() == PTOperator.State.ACTIVE && shb.getState() == OperatorHeartbeat.DeployState.ACTIVE)) {
         // deploy state may require synchronization
         processOperatorDeployStatus(oper, shb, sca);
@@ -1944,6 +1944,8 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
           }
 
           if (status.currentWindowId.get() != stats.windowId) {
+            logger.info("!!!{} - {}, {} => {}", shb.getNodeId(), status.currentWindowId.get(), stats.windowId, currentTimeMillis);
+
             status.lastWindowIdChangeTms = currentTimeMillis;
             status.currentWindowId.set(stats.windowId);
           }

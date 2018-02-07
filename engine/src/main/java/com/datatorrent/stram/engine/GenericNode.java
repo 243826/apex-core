@@ -463,6 +463,7 @@ public class GenericNode extends Node<Operator>
                 break;
 
               case END_STREAM:
+                logger.info("Received {} on {}", t, activePortEntry);
                 activePort.remove();
                 buffers.remove();
                 if (firstWindowId == -1) {
@@ -504,7 +505,7 @@ public class GenericNode extends Node<Operator>
                 expectingBeginWindow--;
 
                 /**
-                 * Since one of the operators we care about it gone, we should relook at our ports.
+                 * Since one of the operators we care about is gone, we should relook at our ports.
                  * We need to make sure that the END_STREAM comes outside of the window.
                  */
                 regularQueues--;
@@ -570,6 +571,7 @@ public class GenericNode extends Node<Operator>
                   controlTupleCount++;
                 }
 
+                logger.info("After receivig {}, active queues = {}", t, activeQueues);
                 if (break_activequeue) {
                   break activequeue;
                 }

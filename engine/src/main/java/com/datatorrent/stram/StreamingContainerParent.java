@@ -200,6 +200,7 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   @Override
   public ContainerHeartbeatResponse processHeartbeat(ContainerHeartbeat msg)
   {
+    logger.info("AM Got heartbeat {} from {}", msg, msg.jvmName);
     // -- TODO
     // Change to use some sort of a annotation that developers can use to specify secure code
     // For now using SecureExecutor work load. Also change sig to throw Exception
