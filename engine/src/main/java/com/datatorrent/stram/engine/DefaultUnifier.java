@@ -48,7 +48,7 @@ public class DefaultUnifier implements Unifier<Object>, Serializable
     }
     catch (Throwable th) {
       logger.error("Unifier emit failed on {}", tuple, th);
-      throw com.celeral.netlet.util.DTThrowable.wrapIfChecked(th);
+      throw com.celeral.netlet.util.Throwables.wrapIfChecked(th);
     }
     finally {
       t = System.currentTimeMillis() - t;

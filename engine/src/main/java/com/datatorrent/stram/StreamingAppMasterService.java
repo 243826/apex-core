@@ -1094,7 +1094,7 @@ public class StreamingAppMasterService extends CompositeService
         }
       }
 
-      if (dnmgr.isOkayToShutdown() || dnmgr.hasDAGShutdown()) {
+      if (dnmgr.hasDAGShutdown()) {
         logger.info("Wrapping up as the DAG has terminated successfully; Buhbye!");
         finalStatus = FinalApplicationStatus.SUCCEEDED;
         appDone = true;
