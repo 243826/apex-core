@@ -46,6 +46,7 @@ public abstract class Publisher extends AuthClient
 
   /**
    *
+   * @param version
    * @param windowId
    */
   public void activate(String version, long windowId)

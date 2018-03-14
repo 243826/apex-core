@@ -413,18 +413,16 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
   public StreamingContainerManager(LogicalPlan dag, Clock clock)
   {
     this(dag, false, clock);
-    this.outputOperators = new HashSet<>(1);
   }
 
   public StreamingContainerManager(LogicalPlan dag)
   {
     this(dag, false, new SystemClock());
-    this.outputOperators = new HashSet<>(1);
   }
 
   public StreamingContainerManager(LogicalPlan dag, boolean enableEventRecording, Clock clock)
   {
-    this.outputOperators = new HashSet<>(1);
+    this.outputOperators = new ConcurrentHashMap<>(1);
     this.clock = clock;
     this.vars = new FinalVars(dag, clock.getTime());
     poolExecutor = Executors.newFixedThreadPool(4);
@@ -441,7 +439,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
 
   private StreamingContainerManager(CheckpointState checkpointedState, boolean enableEventRecording)
   {
-    this.outputOperators = new HashSet<>(1);
+    this.outputOperators = new ConcurrentHashMap<>(1);
     this.vars = checkpointedState.finals;
     this.clock = new SystemClock();
     poolExecutor = Executors.newFixedThreadPool(4);
@@ -1368,8 +1366,8 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
     return this.containers.values();
   }
 
-  private HashMap<Integer, Heartbeats> beats;
-  private HashSet<Heartbeats> outputOperators;
+  private ConcurrentHashMap<Integer, Heartbeats> beats;
+  private ConcurrentHashMap<Heartbeats, Boolean> outputOperators;
 
   static class Heartbeats
   {
@@ -1526,10 +1524,9 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
     logger.debug("Received change notification from {} to {}", beats, unmodifiableCollection);
     outputOperators.clear();
 
-    @SuppressWarnings("unchecked")
     Map<Integer, Heartbeats> localbeats = beats == null? Collections.EMPTY_MAP: beats;
 
-    HashMap<Integer, Heartbeats> newBeats = new HashMap<>(unmodifiableCollection.size());
+    ConcurrentHashMap<Integer, Heartbeats> newBeats = new ConcurrentHashMap<>(unmodifiableCollection.size());
 
     for (PTOperator operator: unmodifiableCollection) {
       Integer id = operator.getId();
@@ -1553,7 +1550,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
       }
 
       if (operator.getOutputs().isEmpty()) {
-        outputOperators.add(heartbeats);
+        outputOperators.put(heartbeats, Boolean.TRUE);
       }
     }
 
@@ -1565,7 +1562,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
   public boolean hasDAGShutdown()
   {
     boolean retval = true;
-    for (Heartbeats operator : outputOperators) {
+    for (Heartbeats operator : outputOperators.keySet()) {
       logger.debug("output operator state = {}", operator.state);
 
       if (operator.state != DeployState.SHUTDOWN) {
@@ -1781,7 +1778,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
       PTOperator oper = this.plan.getAllOperators().get(shb.getNodeId());
 
       if (oper == null) {
-        logger.info("Heartbeat for unknown operator {} (container {})", shb.getNodeId(), heartbeat.getContainerId());
+        logger.info("Heartbeat for unknown operator {} (container {}/{})", shb.getNodeId(), heartbeat.getContainerId(), this.plan.getAllOperators());
         sca.undeployOpers.add(shb.nodeId);
         continue;
       }
@@ -2117,6 +2114,7 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
     }
 
     if (!sca.undeployOpers.isEmpty()) {
+      logger.info("requesting undeploy of {}", sca.undeployOpers);
       rsp.undeployRequest = Lists.newArrayList(sca.undeployOpers);
       if (!sca.deployOpers.isEmpty()) {
         logger.debug("pending requests = {}", sca.deployOpers);

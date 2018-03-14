@@ -348,9 +348,9 @@ public abstract class Node<OPERATOR extends Operator> implements Component<Opera
     EndStreamTuple est = new EndStreamTuple(currentWindowId);
     logger.info("Sending {} to {}", est, outputs);
     for (final Sink<Object> output : outputs.values()) {
-      for (int i = 0; i < 100; i++) {
+      //for (int i = 0; i < 100; i++) {
         output.put(est);
-      }
+      //}
     }
     controlTupleCount++;
   }

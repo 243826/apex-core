@@ -20,6 +20,8 @@ package com.datatorrent.stram.engine;
 
 import java.io.Serializable;
 
+import com.google.common.base.Throwables;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +50,7 @@ public class DefaultUnifier implements Unifier<Object>, Serializable
     }
     catch (Throwable th) {
       logger.error("Unifier emit failed on {}", tuple, th);
-      throw com.celeral.netlet.util.Throwables.wrapIfChecked(th);
+      throw Throwables.propagate(th);
     }
     finally {
       t = System.currentTimeMillis() - t;
