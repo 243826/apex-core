@@ -372,6 +372,11 @@ public interface Context
     Attribute<Integer> CONTAINERS_MAX_COUNT = new Attribute<>(Integer.MAX_VALUE);
 
     /**
+     * Memory for each container.
+     */
+    Attribute<Integer> CONTAINER_MEMORY_MB = new Attribute<>(1024);
+
+    /**
      * Transport to push the stats and the metrics.
      * If using the built-in transport, please use an AutoMetricBuiltInTransport object
      */
@@ -385,12 +390,12 @@ public interface Context
      * <code>application_1355713111917_0002</code>). Note that only the full id string uniquely identifies an application,
      * the integer offset will reset on RM restart.
      */
-    Attribute<String> APPLICATION_ID = new Attribute<String>(new String2String());
+    Attribute<String> APPLICATION_ID = new Attribute<>(new String2String());
     /**
      * Application package source. If the application is launched using an app package, this attribute contains the
      * information of the app package. It is in the format of {user}|{appPackageName}|{appPackageVersion}
      */
-    Attribute<String> APP_PACKAGE_SOURCE = new Attribute<String>(new String2String());
+    Attribute<String> APP_PACKAGE_SOURCE = new Attribute<>(new String2String());
     /**
      * Dump extra debug information in launcher, master and containers.
      */
@@ -431,15 +436,15 @@ public interface Context
      * in files. When a tuple recording file creation time falls beyond the time limit window from the current time a new file
      * is created and the tuples start getting stored in the new file. Default value is 30hrs.
      */
-    Attribute<Integer> TUPLE_RECORDING_PART_FILE_TIME_MILLIS = new Attribute<Integer>(30 * 60 * 60 * 1000);
+    Attribute<Integer> TUPLE_RECORDING_PART_FILE_TIME_MILLIS = new Attribute<>(30 * 60 * 60 * 1000);
     /**
      * Address to which the application side connects to DT Gateway, in the form of host:port. This will override "dt.gateway.listenAddress" in the configuration.
      */
-    Attribute<String> GATEWAY_CONNECT_ADDRESS = new Attribute<String>(new String2String());
+    Attribute<String> GATEWAY_CONNECT_ADDRESS = new Attribute<>(new String2String());
     /**
      * Whether or not gateway is expecting SSL connection.
      */
-    Attribute<Boolean> GATEWAY_USE_SSL = new Attribute<Boolean>(false);
+    Attribute<Boolean> GATEWAY_USE_SSL = new Attribute<>(false);
     /**
      * The username for logging in to the gateway, if authentication is enabled.
      */
