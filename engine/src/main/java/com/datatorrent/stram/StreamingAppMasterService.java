@@ -319,7 +319,8 @@ public class StreamingAppMasterService extends CompositeService
         if (c.getExternalId() == null || c.getState() == PTContainer.State.KILLED) {
           if (c.getRequiredVCores() == 0) {
             result++;
-          } else {
+          }
+          else {
             result += c.getRequiredVCores();
           }
         }
@@ -495,7 +496,7 @@ public class StreamingAppMasterService extends CompositeService
   /**
    * Dump out contents of $CWD and the environment to stdout for debugging
    */
-  @SuppressWarnings("UseOfSystemOutOrSystemErr")
+  @SuppressWarnings({"UseOfSystemOutOrSystemErr", "UseSpecificCatch"})
   public void dumpOutDebugInfo()
   {
     logger.info("Dump debug output");
@@ -521,12 +522,15 @@ public class StreamingAppMasterService extends CompositeService
           logger.info("System CWD content: " + line);
         }
         logger.info("Dumping files in local dir: end");
-      } finally {
+      }
+      finally {
         buf.close();
       }
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
       logger.debug("Exception", e);
-    } catch (InterruptedException e) {
+    }
+    catch (InterruptedException e) {
       logger.info("Interrupted", e);
     }
 
@@ -535,7 +539,8 @@ public class StreamingAppMasterService extends CompositeService
     try {
       // find a better way of logging this using the logger.
       Configuration.dumpConfiguration(getConfig(), new PrintWriter(System.out));
-    } catch (Exception e) {
+    }
+    catch (Exception e) {
       logger.error("Error dumping configuration.", e);
     }
   }
@@ -607,10 +612,11 @@ public class StreamingAppMasterService extends CompositeService
     // start web service
     try {
       org.mortbay.log.Log.setLog(null);
-    } catch (Throwable throwable) {
+    }
+    catch (Throwable throwable) {
       // SPOI-2687. As part of Pivotal Certification, we need to catch ClassNotFoundException as Pivotal was using
       // Jetty 7 where as other distros are using Jetty 6.
-      // LOG.error("can't set the log to null: ", throwable);
+      logger.warn("can't set the log to null!", throwable);
     }
 
     try {
@@ -623,7 +629,8 @@ public class StreamingAppMasterService extends CompositeService
       logger.info("Started web service at port: " + webApp.port());
       this.appMasterTrackingUrl = NetUtils.getConnectAddress(webApp.getListenerAddress()).getHostName() + ":" + webApp.port();
       logger.info("Setting tracking URL to: " + appMasterTrackingUrl);
-    } catch (Exception e) {
+    }
+    catch (Exception e) {
       logger.error("Webapps failed to start. Ignoring for now:", e);
     }
   }
@@ -652,7 +659,8 @@ public class StreamingAppMasterService extends CompositeService
     try {
       StreamingContainer.eventloop.start();
       execute();
-    } finally {
+    }
+    finally {
       StreamingContainer.eventloop.stop();
     }
     return status;
@@ -684,7 +692,7 @@ public class StreamingAppMasterService extends CompositeService
       if (ar != null) {
         appDone = true;
         dnmgr.shutdownDiagnosticsMessage = String.format("Application master failed due to application %s with duplicate application name \"%s\" by the same user \"%s\" is already started.",
-            ar.getApplicationId().toString(), ar.getName(), ar.getUser());
+                                                         ar.getApplicationId().toString(), ar.getName(), ar.getUser());
         logger.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
         finishApplication(FinalApplicationStatus.FAILED, 0);
         return;
@@ -746,7 +754,6 @@ public class StreamingAppMasterService extends CompositeService
     // RM_AM_EXPIRY_INTERVAL_MS with default defined by DEFAULT_RM_AM_EXPIRY_INTERVAL_MS
     // The allocate calls to the RM count as heartbeat so, for now, this additional heartbeat emitter
     // is not required.
-
     int loopCounter = 0;
     List<ContainerId> releasedContainers = new ArrayList<>();
     int numTotalContainers = 0;
@@ -818,22 +825,25 @@ public class StreamingAppMasterService extends CompositeService
 
               int countContainersPerHost = countContainers / countHealthyHosts;
               logger.debug("countContainersPerHost = {} countContainers = {} countHealthyHosts = {} minMemoryMB = {} MasterMemoryMB = {}",
-                       countContainersPerHost,
-                       countContainers,
-                       countHealthyHosts,
-                       minMemoryMB,
-                       dag.getMasterMemoryMB()
+                           countContainersPerHost,
+                           countContainers,
+                           countHealthyHosts,
+                           minMemoryMB,
+                           dag.getMasterMemoryMB()
               );
 
               int containerMemoryMax;
-              if (countContainers % countHealthyHosts == 0) {
+              if (dag.getAttributes().contains(DAGContext.CONTAINER_MEMORY_MB)) {
+                containerMemoryMax = dag.getValue(DAGContext.CONTAINER_MEMORY_MB);
+              }
+              else if (countContainers % countHealthyHosts == 0) {
                 containerMemoryMax = (minMemoryMB - dag.getMasterMemoryMB()) / countContainersPerHost;
               }
               else {
                 containerMemoryMax = minMemoryMB / (countContainersPerHost + 1);
               }
-              containerMemoryMax -= containerMemoryMax % minMem;
 
+              containerMemoryMax -= containerMemoryMax % minMem;
               resourceRequestor.setMaximumMemory(containerMemoryMax);
               countPreviousNode = countHealthyHosts;
             }
@@ -886,7 +896,8 @@ public class StreamingAppMasterService extends CompositeService
           ContainerRequest cr = resourceRequestor.createContainerRequest(csr, true);
           if (cr == null) {
             pendingContainerStartRequests.add(csr);
-          } else {
+          }
+          else {
             resourceRequestor.addContainerRequest(requestedResources, loopCounter, containerRequests, csr, cr);
           }
         }
@@ -907,7 +918,7 @@ public class StreamingAppMasterService extends CompositeService
 
       resourceRequestor.reissueContainerRequests(requestedResources, loopCounter, containerRequests, removedContainerRequests);
 
-     /* Remove nodes from blacklist after timeout */
+      /* Remove nodes from blacklist after timeout */
       List<String> blacklistRemovals = new ArrayList<>();
       for (String hostname : failedBlackListedNodes) {
         Long timeDiff = currentTimeMillis - failedContainerNodesMap.get(hostname).blackListAdditionTime;
@@ -950,7 +961,7 @@ public class StreamingAppMasterService extends CompositeService
         StreamingContainerAgent.ContainerStartRequest csr = null;
         for (Map.Entry<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> entry : requestedResources.entrySet()) {
           if (entry.getKey().container.getResourceRequestPriority() == allocatedContainer.getPriority().getPriority()
-                  && entry.getValue().left != 0) {
+              && entry.getValue().left != 0) {
             alreadyAllocated = false;
             csr = entry.getKey();
             break;
@@ -959,8 +970,8 @@ public class StreamingAppMasterService extends CompositeService
 
         if (alreadyAllocated) {
           logger.info("Releasing {} as resource with priority {} was already assigned",
-                   allocatedContainer.getId(),
-                   allocatedContainer.getPriority());
+                      allocatedContainer.getId(),
+                      allocatedContainer.getPriority());
           releasedContainers.add(allocatedContainer.getId());
           numReleasedContainers++;
           continue;
@@ -978,7 +989,8 @@ public class StreamingAppMasterService extends CompositeService
           // allocated container no longer needed, add release request
           logger.warn("Container {} allocated but nothing to deploy, going to release this container.", allocatedContainer.getId());
           releasedContainers.add(allocatedContainer.getId());
-        } else {
+        }
+        else {
           AllocatedContainer allocatedContainerHolder = new AllocatedContainer(allocatedContainer);
           this.allocatedContainers.put(allocatedContainer.getId().toString(), allocatedContainerHolder);
           ByteBuffer tokens = null;
@@ -1034,11 +1046,12 @@ public class StreamingAppMasterService extends CompositeService
                 if (failedContainerNodesMap.containsKey(hostname)) {
                   NodeFailureStats lstats = failedContainerNodesMap.get(hostname);
                   long timeStamp = System.currentTimeMillis();
-                  if (timeStamp - lstats.lastFailureTimeStamp  >= blacklistRemovalTime) {
+                  if (timeStamp - lstats.lastFailureTimeStamp >= blacklistRemovalTime) {
                     // Reset failure count if last failure was before Blacklist removal time
                     lstats.failureCount = 1;
                     lstats.lastFailureTimeStamp = timeStamp;
-                  } else {
+                  }
+                  else {
                     lstats.lastFailureTimeStamp = timeStamp;
                     lstats.failureCount++;
                     if (lstats.failureCount >= maxConsecutiveContainerFailures) {
@@ -1047,7 +1060,8 @@ public class StreamingAppMasterService extends CompositeService
                       failedBlackListedNodes.add(hostname);
                     }
                   }
-                } else {
+                }
+                else {
                   failedContainerNodesMap.put(hostname, new NodeFailureStats(System.currentTimeMillis(), 1));
                 }
               }
@@ -1057,7 +1071,8 @@ public class StreamingAppMasterService extends CompositeService
           // also occurs when a container was released by the application but never assigned/launched
           logger.debug("Container {} failed or killed.", containerStatus.getContainerId());
           dnmgr.scheduleContainerRestart(containerStatus.getContainerId().toString());
-        } else {
+        }
+        else {
           // container completed successfully
           numCompletedContainers.incrementAndGet();
           logger.info("Container completed successfully." + ", containerId=" + containerStatus.getContainerId());
@@ -1106,7 +1121,8 @@ public class StreamingAppMasterService extends CompositeService
         logger.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
         finalStatus = FinalApplicationStatus.FAILED;
         appDone = true;
-      } else if (allocatedContainers.isEmpty() && numRequestedContainers == 0 && dnmgr.containerStartRequests.isEmpty()) {
+      }
+      else if (allocatedContainers.isEmpty() && numRequestedContainers == 0 && dnmgr.containerStartRequests.isEmpty()) {
         logger.info("Exiting as no more containers are allocated or requested");
         finalStatus = FinalApplicationStatus.SUCCEEDED;
         appDone = true;
@@ -1178,7 +1194,9 @@ public class StreamingAppMasterService extends CompositeService
    * @param containerRequests        Containers to ask for from RM
    * @param removedContainerRequests Container requests to be removed
    * @param releasedContainers
+   *
    * @return Response from RM to AM with allocated containers
+   *
    * @throws YarnException
    */
   private AllocateResponse sendContainerAskToRM(List<ContainerRequest> containerRequests, List<ContainerRequest> removedContainerRequests, List<ContainerId> releasedContainers) throws YarnException, IOException

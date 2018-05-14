@@ -452,7 +452,7 @@ public interface Context
     /**
      * The password for logging in to the gateway, if authentication is enabled.
      */
-    Attribute<String> GATEWAY_PASSWORD = new Attribute<String>(new String2String());
+    Attribute<String> GATEWAY_PASSWORD = new Attribute<>(new String2String());
     /**
      * The timeout when connecting to the pubsub service in gateway
      */
