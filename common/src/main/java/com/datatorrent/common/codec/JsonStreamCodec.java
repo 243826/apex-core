@@ -27,7 +27,6 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializerProvider;
 import org.codehaus.jackson.map.ser.std.SerializerBase;
-import org.codehaus.jackson.schema.JsonSchema;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
