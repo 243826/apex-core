@@ -27,12 +27,15 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializerProvider;
 import org.codehaus.jackson.map.ser.std.SerializerBase;
+import org.codehaus.jackson.schema.JsonSchema;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.api.StringCodec;
 import com.datatorrent.common.util.JacksonObjectMapperProvider;
+
 import com.celeral.netlet.util.Slice;
 
 /**
@@ -44,10 +47,15 @@ import com.celeral.netlet.util.Slice;
 public class JsonStreamCodec<T> implements StreamCodec<T>
 {
   private ObjectMapper mapper;
+  
+  public JsonStreamCodec(ObjectMapper mapper)
+  {
+    this.mapper = mapper;
+  }
 
   public JsonStreamCodec()
   {
-    mapper = new JacksonObjectMapperProvider().getContext(null);
+    this(new JacksonObjectMapperProvider().getContext(null));
   }
 
   public JsonStreamCodec(Map<Class<?>, Class<? extends StringCodec<?>>> codecs)
