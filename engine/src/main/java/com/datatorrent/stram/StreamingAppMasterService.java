@@ -548,7 +548,7 @@ public class StreamingAppMasterService extends CompositeService
   @Override
   protected void serviceInit(Configuration conf) throws Exception
   {
-    logger.info("Application master" + ", appId=" + appAttemptID.getApplicationId().getId() + ", clustertimestamp=" + appAttemptID.getApplicationId().getClusterTimestamp() + ", attemptId=" + appAttemptID.getAttemptId());
+    logger.debug("Application master" + ", appId=" + appAttemptID.getApplicationId().getId() + ", clustertimestamp=" + appAttemptID.getApplicationId().getClusterTimestamp() + ", attemptId=" + appAttemptID.getAttemptId());
 
     try (FileInputStream fis = new FileInputStream("./" + LogicalPlan.SER_FILE_NAME)) {
       this.dag = LogicalPlan.read(fis);
@@ -567,7 +567,7 @@ public class StreamingAppMasterService extends CompositeService
     Map<Class<?>, Class<? extends StringCodec<?>>> codecs = dag.getAttributes().get(DAG.STRING_CODECS);
     StringCodecs.loadConverters(codecs);
 
-    logger.info("Starting application with {} operators in {} containers", dnmgr.getPhysicalPlan().getAllOperators().size(), dnmgr.getPhysicalPlan().getContainers().size());
+    logger.debug("Starting application with {} operators in {} containers", dnmgr.getPhysicalPlan().getAllOperators().size(), dnmgr.getPhysicalPlan().getContainers().size());
 
     // Setup security configuration such as that for web security
     SecurityUtils.init(conf, dag.getValue(LogicalPlan.STRAM_HTTP_AUTHENTICATION));
@@ -626,9 +626,9 @@ public class StreamingAppMasterService extends CompositeService
         config.set("hadoop.http.filter.initializers", StramWSFilterInitializer.class.getCanonicalName());
       }
       WebApp webApp = WebApps.$for("stram", StramAppContext.class, appContext, "ws").with(config).start(new StramWebApp(this.dnmgr));
-      logger.info("Started web service at port: " + webApp.port());
+      logger.debug("Started web service at port: " + webApp.port());
       this.appMasterTrackingUrl = NetUtils.getConnectAddress(webApp.getListenerAddress()).getHostName() + ":" + webApp.port();
-      logger.info("Setting tracking URL to: " + appMasterTrackingUrl);
+      logger.debug("Setting tracking URL to: " + appMasterTrackingUrl);
     }
     catch (Exception e) {
       logger.error("Webapps failed to start. Ignoring for now:", e);
@@ -714,9 +714,9 @@ public class StreamingAppMasterService extends CompositeService
       }
     }
 
-    logger.info("Starting ApplicationMaster");
+    logger.debug("Starting ApplicationMaster");
     final Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
-    logger.info("number of tokens: {}", credentials.getAllTokens().size());
+    logger.debug("number of tokens: {}", credentials.getAllTokens().size());
     Iterator<Token<?>> iter = credentials.getAllTokens().iterator();
     while (iter.hasNext()) {
       Token<?> token = iter.next();
@@ -735,7 +735,7 @@ public class StreamingAppMasterService extends CompositeService
     int maxVcores = response.getMaximumResourceCapability().getVirtualCores();
     int minMem = conf.getInt("yarn.scheduler.minimum-allocation-mb", 1);
     int minVcores = conf.getInt("yarn.scheduler.minimum-allocation-vcores", 1);
-    logger.info("Max mem {}m, Min mem {}m, Max vcores {} and Min vcores {} capabililty of resources in this cluster ", maxMem, minMem, maxVcores, minVcores);
+    logger.debug("Max mem {}m, Min mem {}m, Max vcores {} and Min vcores {} capabililty of resources in this cluster ", maxMem, minMem, maxVcores, minVcores);
 
     resourceRequestor.setMinimumMemory(minMem);
     resourceRequestor.setMaximumMemory(maxMem);
@@ -744,7 +744,7 @@ public class StreamingAppMasterService extends CompositeService
 
     long blacklistRemovalTime = dag.getValue(DAGContext.BLACKLISTED_NODE_REMOVAL_TIME_MILLIS);
     int maxConsecutiveContainerFailures = dag.getValue(DAGContext.MAX_CONSECUTIVE_CONTAINER_FAILURES_FOR_BLACKLIST);
-    logger.info("Blacklist removal time in millis = {}, max consecutive node failure count = {}", blacklistRemovalTime, maxConsecutiveContainerFailures);
+    logger.debug("Blacklist removal time in millis = {}, max consecutive node failure count = {}", blacklistRemovalTime, maxConsecutiveContainerFailures);
     // for locality relaxation fall back
     Map<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> requestedResources = Maps.newHashMap();
 
@@ -806,7 +806,7 @@ public class StreamingAppMasterService extends CompositeService
           }
           else {
             if (countHealthyHosts != countPreviousNode) {
-              logger.info("Proceeding with reallocation of containers: {}/{}", countHealthyHosts, countPreviousNode);
+              logger.debug("Proceeding with reallocation of containers: {}/{}", countHealthyHosts, countPreviousNode);
 
               pendingContainerStartRequests.clear();
 
@@ -929,7 +929,7 @@ public class StreamingAppMasterService extends CompositeService
       }
       if (!blacklistRemovals.isEmpty()) {
         amRmClient.updateBlacklist(null, blacklistRemovals);
-        logger.info("Removing nodes {} from blacklist: time elapsed since last blacklisting due to failure is greater than specified timeout", blacklistRemovals.toString());
+        logger.debug("Removing nodes {} from blacklist: time elapsed since last blacklisting due to failure is greater than specified timeout", blacklistRemovals.toString());
         failedBlackListedNodes.removeAll(blacklistRemovals);
       }
 
@@ -937,7 +937,7 @@ public class StreamingAppMasterService extends CompositeService
       numRequestedContainers += containerRequests.size();
       AllocateResponse amResp = sendContainerAskToRM(containerRequests, removedContainerRequests, releasedContainers);
       if (amResp.getAMCommand() != null) {
-        logger.info(" statement executed:{}", amResp.getAMCommand());
+        logger.debug(" statement executed:{}", amResp.getAMCommand());
         switch (amResp.getAMCommand()) {
           case AM_RESYNC:
           case AM_SHUTDOWN:
@@ -955,7 +955,7 @@ public class StreamingAppMasterService extends CompositeService
       numRequestedContainers -= newAllocatedContainers.size();
       long timestamp = System.currentTimeMillis();
       for (Container allocatedContainer : newAllocatedContainers) {
-        logger.info("Got new container." + ", containerId=" + allocatedContainer.getId() + ", containerNode=" + allocatedContainer.getNodeId() + ", containerNodeURI=" + allocatedContainer.getNodeHttpAddress() + ", containerResourceMemory" + allocatedContainer.getResource().getMemory() + ", priority" + allocatedContainer.getPriority());
+        logger.debug("Got new container." + ", containerId=" + allocatedContainer.getId() + ", containerNode=" + allocatedContainer.getNodeId() + ", containerNodeURI=" + allocatedContainer.getNodeHttpAddress() + ", containerResourceMemory" + allocatedContainer.getResource().getMemory() + ", priority" + allocatedContainer.getPriority());
 
         boolean alreadyAllocated = true;
         StreamingContainerAgent.ContainerStartRequest csr = null;
@@ -969,7 +969,7 @@ public class StreamingAppMasterService extends CompositeService
         }
 
         if (alreadyAllocated) {
-          logger.info("Releasing {} as resource with priority {} was already assigned",
+          logger.debug("Releasing {} as resource with priority {} was already assigned",
                       allocatedContainer.getId(),
                       allocatedContainer.getPriority());
           releasedContainers.add(allocatedContainer.getId());
@@ -1055,7 +1055,7 @@ public class StreamingAppMasterService extends CompositeService
                     lstats.lastFailureTimeStamp = timeStamp;
                     lstats.failureCount++;
                     if (lstats.failureCount >= maxConsecutiveContainerFailures) {
-                      logger.info("Node {} failed {} times consecutively within {} minutes, marking the node blacklisted", hostname, lstats.failureCount, blacklistRemovalTime / (60 * 1000));
+                      logger.debug("Node {} failed {} times consecutively within {} minutes, marking the node blacklisted", hostname, lstats.failureCount, blacklistRemovalTime / (60 * 1000));
                       blacklistAdditions.add(hostname);
                       failedBlackListedNodes.add(hostname);
                     }
@@ -1110,12 +1110,12 @@ public class StreamingAppMasterService extends CompositeService
       }
 
       if (dnmgr.hasDAGShutdown()) {
-        logger.info("Wrapping up as the DAG has terminated successfully; Buhbye!");
+        logger.debug("Wrapping up as the DAG has terminated successfully; Buhbye!");
         finalStatus = FinalApplicationStatus.SUCCEEDED;
         appDone = true;
       }
 
-      logger.info("Current application state: loop=" + loopCounter + ", total=" + numTotalContainers + ", requested=" + numRequestedContainers + ", released=" + numReleasedContainers + ", completed=" + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated=" + allocatedContainers.size());
+      logger.trace("Current application state: loop=" + loopCounter + ", total=" + numTotalContainers + ", requested=" + numRequestedContainers + ", released=" + numReleasedContainers + ", completed=" + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated=" + allocatedContainers.size());
 
       if (dnmgr.forcedShutdown) {
         logger.info("Forced shutdown due to {}", dnmgr.shutdownDiagnosticsMessage);
@@ -1137,7 +1137,7 @@ public class StreamingAppMasterService extends CompositeService
 
   private void finishApplication(FinalApplicationStatus finalStatus, int numTotalContainers) throws YarnException, IOException
   {
-    logger.info("Application completed. Signalling finish to RM");
+    logger.debug("Application completed. Signalling finish to RM");
     FinishApplicationMasterRequest finishReq = Records.newRecord(FinishApplicationMasterRequest.class);
     finishReq.setFinalApplicationStatus(finalStatus);
 
@@ -1152,7 +1152,7 @@ public class StreamingAppMasterService extends CompositeService
       // expected termination of the master process
       // application status and diagnostics message are set above
     }
-    logger.info("diagnostics: " + finishReq.getDiagnostics());
+    logger.debug("diagnostics: " + finishReq.getDiagnostics());
     amRmClient.unregisterApplicationMaster(finishReq.getFinalApplicationStatus(), finishReq.getDiagnostics(), null);
   }
 
@@ -1202,23 +1202,23 @@ public class StreamingAppMasterService extends CompositeService
   private AllocateResponse sendContainerAskToRM(List<ContainerRequest> containerRequests, List<ContainerRequest> removedContainerRequests, List<ContainerId> releasedContainers) throws YarnException, IOException
   {
     if (removedContainerRequests.size() > 0) {
-      logger.info(" Removing container request: {}", removedContainerRequests);
+      logger.debug(" Removing container request: {}", removedContainerRequests);
       for (ContainerRequest cr : removedContainerRequests) {
-        logger.info("Removed container: {}", cr);
+        logger.debug("Removed container: {}", cr);
         amRmClient.removeContainerRequest(cr);
       }
     }
 
     if (containerRequests.size() > 0) {
-      logger.info("Asking RM for containers: " + containerRequests);
+      logger.debug("Asking RM for containers: " + containerRequests);
       for (ContainerRequest cr : containerRequests) {
-        logger.info("Requested container: {} on host: [{}]", cr.toString(), StringUtils.join(cr.getNodes(), ", "));
+        logger.debug("Requested container: {} on host: [{}]", cr.toString(), StringUtils.join(cr.getNodes(), ", "));
         amRmClient.addContainerRequest(cr);
       }
     }
 
     for (ContainerId containerId : releasedContainers) {
-      logger.info("Released container, id={}", containerId.getId());
+      logger.debug("Released container, id={}", containerId.getId());
       amRmClient.releaseAssignedContainer(containerId);
     }
 
@@ -1226,7 +1226,7 @@ public class StreamingAppMasterService extends CompositeService
       AllocatedContainer allocatedContainer = this.allocatedContainers.get(containerIdStr);
       if (allocatedContainer != null && !allocatedContainer.stopRequested) {
         nmClient.stopContainerAsync(allocatedContainer.container.getId(), allocatedContainer.container.getNodeId());
-        logger.info("Requested stop container {}", containerIdStr);
+        logger.debug("Requested stop container {}", containerIdStr);
         allocatedContainer.stopRequested = true;
       }
       dnmgr.containerStopRequests.remove(containerIdStr);

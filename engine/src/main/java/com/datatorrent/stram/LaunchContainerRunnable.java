@@ -122,7 +122,7 @@ public class LaunchContainerRunnable implements Runnable
     classPathEnv.append(":."); // include log4j.properties, if any
 
     env.put("CLASSPATH", classPathEnv.toString());
-    LOG.info("CLASSPATH: {}", classPathEnv);
+    LOG.debug("CLASSPATH: {}", classPathEnv);
   }
 
   public static void addFileToLocalResources(final String name, final FileStatus fileStatus, final LocalResourceType type, final Map<String, LocalResource> localResources)
@@ -147,7 +147,7 @@ public class LaunchContainerRunnable implements Runnable
   @Override
   public void run()
   {
-    LOG.info("Setting up container launch context for containerid={}", container.getId());
+    LOG.debug("Setting up container launch context for containerid={}", container.getId());
     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
 
     setClasspath(containerEnv);
@@ -194,7 +194,7 @@ public class LaunchContainerRunnable implements Runnable
     for (CharSequence str : vargs) {
       command.append(str).append(" ");
     }
-    LOG.info("Launching on node: {} command: {}", container.getNodeId(), command);
+    LOG.debug("Launching on node: {} command: {}", container.getNodeId(), command);
 
     List<String> commands = new ArrayList<>();
     commands.add(command.toString());
@@ -246,7 +246,7 @@ public class LaunchContainerRunnable implements Runnable
     Context.ContainerOptConfigurator containerOptConfigurator = dag.getAttributes().get(LogicalPlan.CONTAINER_OPTS_CONFIGURATOR);
     jvmOpts = containerOptConfigurator.getJVMOptions(nmClient.getConfig(), operatorMetaList);
     jvmOpts = parseJvmOpts(jvmOpts, ((long)bufferServerMemory) * MB_TO_B);
-    LOG.info("Jvm opts {} for container {}",jvmOpts,container.getId());
+    LOG.debug("Jvm opts {} for container {}",jvmOpts,container.getId());
     vargs.add(jvmOpts);
 
     Path childTmpDir = new Path(Environment.PWD.$(), YarnConfiguration.DEFAULT_CONTAINER_TEMP_DIR);

@@ -89,8 +89,8 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   protected void startRpcServer()
   {
     Configuration conf = getConfig();
-    logger.info("Config: " + conf);
-    logger.info("Listener thread count " + listenerThreadCount);
+    logger.debug("Config: " + conf);
+    logger.debug("Listener thread count " + listenerThreadCount);
     try {
       server = new RPC.Builder(conf).setProtocol(StreamingContainerUmbilicalProtocol.class).setInstance(this)
               .setBindAddress("0.0.0.0").setPort(0).setNumHandlers(listenerThreadCount).setSecretManager(tokenSecretManager)
@@ -118,7 +118,7 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
 
       server.start();
       this.address = NetUtils.getConnectAddress(server);
-      logger.info("Container callback server listening at " + this.address);
+      logger.debug("Container callback server listening at " + this.address);
     }
     catch (IOException e) {
       throw new YarnRuntimeException(e);
@@ -200,7 +200,7 @@ public class StreamingContainerParent extends org.apache.hadoop.service.Composit
   @Override
   public ContainerHeartbeatResponse processHeartbeat(ContainerHeartbeat msg)
   {
-    logger.info("AM Got heartbeat {} from {}", msg, msg.jvmName);
+    logger.trace("AM Got heartbeat {} from {}", msg, msg.jvmName);
     // -- TODO
     // Change to use some sort of a annotation that developers can use to specify secure code
     // For now using SecureExecutor work load. Also change sig to throw Exception
