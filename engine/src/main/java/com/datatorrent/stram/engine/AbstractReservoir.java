@@ -407,14 +407,14 @@ public abstract class AbstractReservoir implements SweepableReservoir, BlockingQ
       try {
         while ((o = queue.peek()) != null) {
           if (o instanceof Tuple) {
-            logger.info("Reservoir : {} -> {}", this.getId(), o);
+            logger.trace("Reservoir : {} -> {}", this.getId(), o);
             return (Tuple)o;
           }
           count++;
           sink.put(queue.poll());
           notFull.signal();
           if (lock.hasQueuedThreads()) {
-            logger.info("Reservoir : {} -> hasQueuedThreads", this.getId());
+            logger.trace("Reservoir : {} -> hasQueuedThreads", this.getId());
             return null;
           }
         }
@@ -433,17 +433,17 @@ public abstract class AbstractReservoir implements SweepableReservoir, BlockingQ
         lock.lockInterruptibly();
         try {
           while (!queue.offer(o)) {
-            logger.info("Reservoir+: {} !+ {}", getId(), o);
+            logger.trace("Reservoir+: {} !+ {}", getId(), o);
             notFull.await();
-            logger.info("Reservoir+: {} !- {}", getId(), o);
+            logger.trace("Reservoir+: {} !- {}", getId(), o);
           }
-          logger.info("Reservoir+: {} != {}", getId(), o);
+          logger.trace("Reservoir+: {} != {}", getId(), o);
         } finally {
           lock.unlock();
         }
       }
       else      if (o instanceof Tuple) {
-        logger.info("Reservoir+: {} -> {}", this.getId(), o);
+        logger.trace("Reservoir+: {} -> {}", this.getId(), o);
       }
       
     }
@@ -460,7 +460,7 @@ public abstract class AbstractReservoir implements SweepableReservoir, BlockingQ
           notFull.signal();
         }
         
-        logger.info("Reservoir-: {} -> {}", this.getId(), o);
+        logger.trace("Reservoir-: {} -> {}", this.getId(), o);
         return o;
       } finally {
         lock.unlock();

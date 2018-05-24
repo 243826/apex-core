@@ -80,7 +80,7 @@ public class BufferServerPublisher extends Publisher implements ByteCounterStrea
     byte[] array;
     if (payload instanceof Tuple) {
       final Tuple t = (Tuple)payload;
-      logger.info("BS Publisher : {} -> {}", this, t);
+      logger.trace("BS Publisher : {} -> {}", this, t);
       switch (t.getType()) {
         case CHECKPOINT:
           if (statefulSerde != null) {

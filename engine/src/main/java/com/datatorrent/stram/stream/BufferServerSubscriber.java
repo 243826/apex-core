@@ -281,7 +281,7 @@ public class BufferServerSubscriber extends Subscriber implements ByteCounterStr
         for (int i = 0; i < size; i++) {
           if (peekUnsafe() instanceof Tuple) {
             count += i;
-            logger.info("BS Subscriber : {} -> {}", BufferServerSubscriber.this, peekUnsafe());
+            logger.trace("BS Subscriber : {} -> {}", BufferServerSubscriber.this, peekUnsafe());
             return (Tuple) peekUnsafe();
           }
           sink.put(pollUnsafe());

@@ -80,7 +80,7 @@ public class ResourceRequestHandler
   {
     if (!requestedResources.isEmpty()) {
       for (Map.Entry<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> entry : requestedResources.entrySet()) {
-        logger.info("{} Evaluating {}", loopCounter, entry.getValue());
+        logger.trace("{} Evaluating {}", loopCounter, entry.getValue());
         /*
          * Create container requests again if pending requests were not allocated by Yarn till timeout.
          */
@@ -260,12 +260,12 @@ public class ResourceRequestHandler
     if (!c.getPreferredAntiPrefs().isEmpty()) {
       populateAntiHostList(c, antiPreferredHosts);
     }
-    logger.info("Strict anti-affinity = {} for container with operators {}", antiHosts, StringUtils.join(c.getOperators(), ","));
+    logger.debug("Strict anti-affinity = {} for container with operators {}", antiHosts, StringUtils.join(c.getOperators(), ","));
     for (PTOperator oper : c.getOperators()) {
       HostOperatorSet grpObj = oper.getNodeLocalOperators();
       Set<PTOperator> nodeLocalSet = grpObj.getOperatorSet();
       if (nodeLocalSet.size() > 1 ||  !c.getStrictAntiPrefs().isEmpty() || !c.getPreferredAntiPrefs().isEmpty()) {
-        logger.info("Finding new host for {}", nodeLocalSet);
+        logger.debug("Finding new host for {}", nodeLocalSet);
         int aggrMemory = c.getRequiredMemoryMB();
         int vCores = c.getRequiredVCores();
         Set<PTContainer> containers = Sets.newHashSet();
@@ -292,7 +292,7 @@ public class ResourceRequestHandler
         }
       }
     }
-    logger.info("Found host {}", host);
+    logger.debug("Found host {}", host);
     return host;
   }
 

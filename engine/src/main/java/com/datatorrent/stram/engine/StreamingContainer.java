@@ -693,7 +693,7 @@ public class StreamingContainer extends YarnContainerMain
 
         msg.stackTrace = stackTrace;
 
-        logger.info("SC sending heartbeat {}", msg);
+        logger.trace("SC sending heartbeat {}", msg);
         rsp = umbilical.processHeartbeat(msg);
 
         if (rsp.stackTraceRequired) {

@@ -433,7 +433,7 @@ public class Server implements ServerListener
            * unregister the unidentified client since its job is done!
            */
           unregistered(key);
-          logger.info("Received publisher request: {}", request);
+          logger.debug("Received publisher request: {}", request);
           PublishRequestTuple publisherRequest = (PublishRequestTuple)request;
 
           DataList dl = handlePublisherRequest(publisherRequest, this);
@@ -478,7 +478,7 @@ public class Server implements ServerListener
            */
           unregistered(key);
           ignore = true;
-          logger.info("Received subscriber request: {}", request);
+          logger.debug("Received subscriber request: {}", request);
 
           SubscribeRequestTuple subscriberRequest = (SubscribeRequestTuple)request;
           AbstractLengthPrependerClient subscriber;
@@ -517,7 +517,7 @@ public class Server implements ServerListener
           break;
 
         case PURGE_REQUEST:
-          logger.info("Received purge request: {}", request);
+          logger.debug("Received purge request: {}", request);
           try {
             handlePurgeRequest((PurgeRequestTuple)request, this);
           }
@@ -527,7 +527,7 @@ public class Server implements ServerListener
           break;
 
         case RESET_REQUEST:
-          logger.info("Received reset all request: {}", request);
+          logger.debug("Received reset all request: {}", request);
           try {
             handleResetRequest((ResetRequestTuple)request, this);
           }
