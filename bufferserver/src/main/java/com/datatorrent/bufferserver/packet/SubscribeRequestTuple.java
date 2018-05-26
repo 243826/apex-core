@@ -46,7 +46,7 @@ public class SubscribeRequestTuple extends RequestTuple
   private int bufferSize;
 
   @Override
-  public void parse()
+  public int parse()
   {
     parsed = true;
     int dataOffset = offset + 1;
@@ -65,7 +65,7 @@ public class SubscribeRequestTuple extends RequestTuple
         version = EMPTY_STRING;
         dataOffset++;
       } else {
-        return;
+        return dataOffset;
       }
       /*
        * read the identifier.
@@ -80,7 +80,7 @@ public class SubscribeRequestTuple extends RequestTuple
         identifier = EMPTY_STRING;
         dataOffset++;
       } else {
-        return;
+        return dataOffset;
       }
 
       baseSeconds = readVarInt(dataOffset, limit);
@@ -103,7 +103,7 @@ public class SubscribeRequestTuple extends RequestTuple
         streamType = EMPTY_STRING;
         dataOffset++;
       } else {
-        return;
+        return dataOffset;
       }
       /*
        * read the upstream identifier
@@ -118,7 +118,7 @@ public class SubscribeRequestTuple extends RequestTuple
         upstreamIdentifier = EMPTY_STRING;
         dataOffset++;
       } else {
-        return;
+        return dataOffset;
       }
       /*
        * read the partition count
@@ -133,13 +133,13 @@ public class SubscribeRequestTuple extends RequestTuple
           }
         } else {
           /* mask cannot be zero */
-          return;
+          return dataOffset;
         }
         partitions = new int[count];
         for (int i = 0; i < count; i++) {
           partitions[i] = readVarInt(dataOffset, limit);
           if (partitions[i] == -1) {
-            return;
+            return dataOffset;
           } else {
             while (buffer[dataOffset++] < 0) {
             }
@@ -149,7 +149,7 @@ public class SubscribeRequestTuple extends RequestTuple
 
       bufferSize = readVarInt(dataOffset, limit);
       if (bufferSize == -1) {
-        return;
+        return dataOffset;
       }
       while (buffer[dataOffset++] < 0) {
       }
@@ -158,6 +158,8 @@ public class SubscribeRequestTuple extends RequestTuple
     } catch (NumberFormatException nfe) {
       logger.warn("Unparseable Tuple", nfe);
     }
+    
+    return dataOffset;
   }
 
   public boolean isParsed()

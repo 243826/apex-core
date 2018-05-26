@@ -49,7 +49,8 @@ import com.datatorrent.stram.tuple.Tuple;
 import static java.lang.Thread.sleep;
 
 /**
- * <p>FastPublisher class.</p>
+ * <p>
+ * FastPublisher class.</p>
  *
  * TODO:- Implement token security
  *
@@ -105,14 +106,17 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
     int read;
     if ((read = channel.read(ByteBuffer.allocate(1))) > 0) {
       throw new RuntimeException("Publisher " + this + " is not supposed to receive any data");
-    } else if (read == -1) {
+    }
+    else if (read == -1) {
       try {
         channel.close();
-      } finally {
+      }
+      finally {
         unregistered(key);
         key.attach(Listener.NOOP_CLIENT_LISTENER);
       }
-    } else {
+    }
+    else {
       logger.debug("{} read 0 bytes", this);
     }
   }
@@ -139,12 +143,14 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         readBuffer.limit(0);
         if (readIndex == lastIndex) {
           readIndex = 0;
-        } else {
+        }
+        else {
           readIndex++;
         }
       }
       readBuffer = readBuffers[readIndex];
-    } while (true);
+    }
+    while (true);
   }
 
   @Override
@@ -183,8 +189,10 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
     eventloop = context.get(StreamContext.EVENT_LOOP);
     eventloop.connect(address.isUnresolved() ? new InetSocketAddress(address.getHostName(), address.getPort()) : address, this);
 
-    logger.debug("registering publisher: {} {} windowId={} server={}", new Object[] {context.getSourceId(), context.getId(), context.getFinishedWindowId(), context.getBufferServerAddress()});
-    byte[] serializedRequest = PublishRequestTuple.getSerializedRequest(com.datatorrent.bufferserver.packet.Tuple.FAST_VERSION, id, context.getFinishedWindowId());
+    logger.debug("registering publisher: {} {} windowId={} server={}", new Object[]{context.getSourceId(), context.getId(), context.getFinishedWindowId(), context.getBufferServerAddress()});
+    byte[] serializedRequest = PublishRequestTuple.getSerializedRequest(com.datatorrent.bufferserver.packet.Tuple.FAST_VERSION, id,
+                                                                        context.getFinishedWindowId(),
+                                                                        context.getValue(StreamContext.BLOCK_MEMORY));
     assert (serializedRequest.length < 128);
     writeBuffers[0].put((byte)serializedRequest.length);
     writeBuffers[0].put(serializedRequest);
@@ -246,14 +254,16 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         writeBuffer.put((byte)size);
         if (writeBuffer.hasRemaining()) {
           writeBuffer.put((byte)(size >> 8));
-        } else {
+        }
+        else {
           synchronized (readBuffers) {
             readBuffers[writeIndex].limit(BUFFER_CAPACITY);
           }
           advanceWriteBuffer();
           writeBuffer.put((byte)(size >> 8));
         }
-      } else {
+      }
+      else {
         synchronized (readBuffers) {
           readBuffers[writeIndex].limit(BUFFER_CAPACITY);
         }
@@ -278,14 +288,17 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffer.put(array, offset, size);
             break;
           }
-        } while (true);
-      } else {
+        }
+        while (true);
+      }
+      else {
         writeBuffer.put(array);
       }
       synchronized (readBuffers) {
         readBuffers[writeIndex].limit(writeBuffer.position());
       }
-    } else {
+    }
+    else {
       count++;
       int hashcode = tuple.hashCode();
 
@@ -297,7 +310,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         writeBuffer.position(BUFFER_CAPACITY);
         advanceWriteBuffer();
         writeBuffer.position(newPosition - BUFFER_CAPACITY);
-      } else {
+      }
+      else {
         writeBuffer.position(newPosition);
       }
 
@@ -316,7 +330,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         synchronized (readBuffers[wi]) {
           readBuffers[wi].limit(writeBuffer.position());
         }
-      } else {
+      }
+      else {
         size = BUFFER_CAPACITY - position - 2 + writeBuffer.position();
         int index = writeIndex;
         synchronized (readBuffers[index]) {
@@ -326,7 +341,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         do {
           if (index == 0) {
             index = lastIndex;
-          } else {
+          }
+          else {
             index--;
           }
 
@@ -338,7 +354,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             readBuffers[index].limit(BUFFER_CAPACITY);
           }
           size += BUFFER_CAPACITY;
-        } while (true);
+        }
+        while (true);
         assert (size <= Short.MAX_VALUE);
         index = wi;
         switch (position) {
@@ -346,7 +363,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             position = 0;
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             writeBuffers[wi].put(position++, (byte)size);
@@ -362,7 +380,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffers[wi].put(position, (byte)size);
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             position = 0;
@@ -379,7 +398,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffers[wi].put(position, (byte)(size >> 8));
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             position = 0;
@@ -396,7 +416,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffers[wi].put(position, com.datatorrent.bufferserver.packet.MessageType.PAYLOAD_VALUE);
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             position = 0;
@@ -413,7 +434,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffers[wi].put(position, (byte)hashcode);
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             position = 0;
@@ -430,7 +452,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffers[wi].put(position, (byte)(hashcode >> 8));
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             position = 0;
@@ -447,7 +470,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffers[wi].put(position, (byte)(hashcode >> 16));
             if (wi == lastIndex) {
               wi = 0;
-            } else {
+            }
+            else {
               wi++;
             }
             position = 0;
@@ -482,7 +506,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
   {
     if (writeIndex == lastIndex) {
       writeIndex = 0;
-    } else {
+    }
+    else {
       writeIndex++;
     }
 
@@ -493,7 +518,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
 
       writeBuffer = writeBuffers[writeIndex];
       writeBuffer.clear();
-    } catch (InterruptedException ie) {
+    }
+    catch (InterruptedException ie) {
       throw new RuntimeException(ie);
     }
   }
@@ -504,7 +530,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
     if (reset) {
       try {
         return count;
-      } finally {
+      }
+      finally {
         count = 0;
       }
     }
@@ -531,7 +558,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         writeBuffer.put(bytes, 0, remaining);
         advanceWriteBuffer();
         write(bytes, remaining, bytes.length - remaining);
-      } else {
+      }
+      else {
         writeBuffer.put(bytes);
       }
     }
@@ -824,14 +852,17 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
           }
           if (charIndex < charCount) {
             advanceWriteBuffer();
-          } else {
+          }
+          else {
             break;
           }
-        } while (true);
+        }
+        while (true);
 
         int pos = writeBuffer.position() - 1;
         writeBuffer.put(pos, (byte)(writeBuffer.get(pos) | 0x80));
-      } else {
+      }
+      else {
         writeUtf8Length(charCount + 1);
         do {
           int c;
@@ -846,10 +877,12 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
 
           if (charIndex < charCount) {
             advanceWriteBuffer();
-          } else {
+          }
+          else {
             break;
           }
-        } while (true);
+        }
+        while (true);
       }
     }
 
@@ -880,10 +913,12 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
 
         if (charIndex < charCount) {
           advanceWriteBuffer();
-        } else {
+        }
+        else {
           break;
         }
-      } while (true);
+      }
+      while (true);
     }
 
     @Override
@@ -905,10 +940,12 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         }
         if (charIndex < charCount) {
           advanceWriteBuffer();
-        } else {
+        }
+        else {
           break;
         }
-      } while (true);
+      }
+      while (true);
 
       int pos = writeBuffer.position() - 1;
       writeBuffer.put(pos, (byte)(writeBuffer.get(pos) | 0x80));
@@ -921,11 +958,13 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
         writeBuffer.put((byte)(value >>> 8));
         if (writeBuffer.hasRemaining()) {
           writeBuffer.put((byte)value);
-        } else {
+        }
+        else {
           advanceWriteBuffer();
           writeBuffer.put((byte)value);
         }
-      } else {
+      }
+      else {
         advanceWriteBuffer();
         writeBuffer.put((byte)(value >>> 8));
         writeBuffer.put((byte)value);
@@ -1589,7 +1628,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
     {
       if (writeBuffer.hasRemaining()) {
         writeBuffer.put((byte)(value ? 1 : 0));
-      } else {
+      }
+      else {
         advanceWriteBuffer();
         writeBuffer.put((byte)(value ? 1 : 0));
       }
@@ -1632,7 +1672,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffer.put((byte)(value | 0x80));
             break;
         }
-      } else if (value >>> 13 == 0) {
+      }
+      else if (value >>> 13 == 0) {
         switch (remaining) {
           case 0:
             advanceWriteBuffer();
@@ -1651,7 +1692,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffer.put((byte)(value >>> 6));
             break;
         }
-      } else if (value >>> 20 == 0) {
+      }
+      else if (value >>> 20 == 0) {
         switch (remaining) {
           case 0:
             advanceWriteBuffer();
@@ -1677,7 +1719,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffer.put((byte)(value >>> 13));
             break;
         }
-      } else if (value >>> 27 == 0) {
+      }
+      else if (value >>> 27 == 0) {
         switch (remaining) {
           case 0:
             advanceWriteBuffer();
@@ -1714,7 +1757,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
             writeBuffer.put((byte)(value >>> 20));
             break;
         }
-      } else {
+      }
+      else {
         switch (remaining) {
           case 0:
             advanceWriteBuffer();
@@ -1786,7 +1830,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
               remaining--;
               break;
           }
-        } else if (c > 0x07FF) {
+        }
+        else if (c > 0x07FF) {
           switch (remaining) {
             case 0:
               advanceWriteBuffer();
@@ -1819,7 +1864,8 @@ public class FastPublisher extends Kryo implements ClientListener, Stream
               remaining -= 3;
               break;
           }
-        } else {
+        }
+        else {
           switch (remaining) {
             case 0:
               advanceWriteBuffer();

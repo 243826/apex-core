@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import com.datatorrent.bufferserver.internal.DataList;
 import com.datatorrent.bufferserver.internal.FastDataList;
 import com.datatorrent.bufferserver.internal.LogicalNode;
-import com.datatorrent.bufferserver.packet.MessageType;
 import com.datatorrent.bufferserver.packet.PayloadTuple;
 import com.datatorrent.bufferserver.packet.PublishRequestTuple;
 import com.datatorrent.bufferserver.packet.PurgeRequestTuple;
@@ -85,13 +84,12 @@ public class Server implements ServerListener
    */
   public Server(int port)
   {
-    this(port, DEFAULT_BUFFER_SIZE, DEFAULT_NUMBER_OF_CACHED_BLOCKS);
+    this(port, DEFAULT_NUMBER_OF_CACHED_BLOCKS);
   }
 
-  public Server(int port, int blocksize, int numberOfCacheBlocks)
+  public Server(int port, int numberOfCacheBlocks)
   {
     this.port = port;
-    this.blockSize = blocksize;
     this.numberOfCacheBlocks = numberOfCacheBlocks;
     serverHelperExecutor = Executors.newSingleThreadExecutor(new NameableThreadFactory("ServerHelper"));
     final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(numberOfCacheBlocks);
@@ -152,6 +150,7 @@ public class Server implements ServerListener
   /**
    *
    * @param args
+   *
    * @throws Exception
    */
   public static void main(String[] args) throws Exception
@@ -179,7 +178,6 @@ public class Server implements ServerListener
   private final ConcurrentHashMap<String, LogicalNode> subscriberGroups = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, AbstractLengthPrependerClient> publisherChannels = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, AbstractLengthPrependerClient> subscriberChannels = new ConcurrentHashMap<>();
-  private final int blockSize;
   private final int numberOfCacheBlocks;
 
   private void handlePurgeRequest(PurgeRequestTuple request, final AbstractLengthPrependerClient ctx) throws IOException
@@ -240,6 +238,7 @@ public class Server implements ServerListener
    *
    * @param request
    * @param connection
+   *
    * @return
    */
   public LogicalNode handleSubscriberRequest(SubscribeRequestTuple request,
@@ -286,8 +285,8 @@ public class Server implements ServerListener
       }
       else {
         dl = Tuple.FAST_VERSION.equals(request.getVersion())
-        ? new FastDataList(upstream_identifier, blockSize, numberOfCacheBlocks)
-        : new DataList(upstream_identifier, blockSize, numberOfCacheBlocks);
+        ? new FastDataList(upstream_identifier, 4096, numberOfCacheBlocks)
+        : new DataList(upstream_identifier, 4096, numberOfCacheBlocks);
         publisherBuffers.put(upstream_identifier, dl);
         //logger.debug("new list = {}", dl);
       }
@@ -322,11 +321,13 @@ public class Server implements ServerListener
    *
    * @param request
    * @param connection
+   *
    * @return
    */
   public DataList handlePublisherRequest(PublishRequestTuple request, AbstractLengthPrependerClient connection)
   {
     String identifier = request.getIdentifier();
+    int blockSize = request.getBlockSize();
 
     DataList dl;
 
@@ -340,6 +341,7 @@ public class Server implements ServerListener
       }
 
       dl = publisherBuffers.get(identifier);
+      dl.setBlockSize(blockSize);
       try {
         dl.rewind(request.getBaseSeconds(), request.getWindowId());
       }
@@ -643,10 +645,6 @@ public class Server implements ServerListener
     @Override
     public void onMessage(byte[] buffer, int offset, int size)
     {
-      if (buffer[offset] == MessageType.END_STREAM_VALUE) {
-        logger.warn("server {} received {}", this, Tuple.getTuple(buffer, offset, size));
-      }
-
       dirty = true;
     }
 

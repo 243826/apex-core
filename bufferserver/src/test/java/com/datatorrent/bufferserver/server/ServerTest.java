@@ -70,7 +70,7 @@ public class ServerTest
     eventloopServer.start();
     eventloopClient.start();
 
-    instance = new Server(0, 4096,8);
+    instance = new Server(0, 8);
     address = instance.run(eventloopServer);
     assertTrue(address instanceof InetSocketAddress);
     assertFalse(address.isUnresolved());
@@ -96,7 +96,7 @@ public class ServerTest
     bss = new Subscriber("MySubscriber");
     eventloopClient.connect(address, bss);
 
-    bsp.activate(null, 0L);
+    bsp.activate(null, 0, 0, 4096);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
 
     synchronized (this) {
@@ -119,7 +119,7 @@ public class ServerTest
     bss = new Subscriber("MyPublisher");
     eventloopClient.connect(address, bss);
 
-    bsp.activate(null, 0L);
+    bsp.activate(null, 0, 0, 4096);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
 
     long resetInfo = 0x7afebabe000000faL;
@@ -176,7 +176,7 @@ public class ServerTest
 
     bsp = new Publisher("MyPublisher");
     eventloopClient.connect(address, bsp);
-    bsp.activate(null, 0x7afebabe, 0);
+    bsp.activate(null, 0x7afebabe, 0, 4096);
 
     long windowId = 0x7afebabe00000000L;
 
@@ -326,7 +326,7 @@ public class ServerTest
     bsp = new Publisher("MyPublisher");
     eventloopClient.connect(address, bsp);
 
-    bsp.activate(null, 10, 0);
+    bsp.activate(null, 10, 0, 4096);
 
     long windowId = 0L;
 
@@ -431,7 +431,7 @@ public class ServerTest
     eventloopClient.connect(address, bsp);
 
 
-    bsp.activate(null, 0, 0);
+    bsp.activate(null, 0, 0, 4096);
 
     for (int i = 0; i < 100; i++) {
       bsp.publishMessage(BeginWindowTuple.getSerializedTuple(i));
@@ -472,7 +472,7 @@ public class ServerTest
     bss.setToken(authToken);
     eventloopClient.connect(address, bss);
 
-    bsp.activate(null, 0L);
+    bsp.activate(null, 0, 0, 4096);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
 
     long resetInfo = 0x7afebabe000000faL;
@@ -508,7 +508,7 @@ public class ServerTest
     bss.setToken(authToken);
     eventloopClient.connect(address, bss);
 
-    bsp.activate(null, 0L);
+    bsp.activate(null, 0, 0, 4096);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
 
     long resetInfo = 0x7afebabe000000faL;

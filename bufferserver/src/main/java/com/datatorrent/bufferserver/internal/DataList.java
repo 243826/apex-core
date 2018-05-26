@@ -57,7 +57,7 @@ public class DataList
 {
   private final int MAX_COUNT_OF_INMEM_BLOCKS;
   protected final String identifier;
-  private final int blockSize;
+  private int blockSize;
   private final HashMap<BitVector, HashSet<DataListener>> listeners = newHashMap();
   protected final HashSet<DataListener> all_listeners = newHashSet();
   protected Block first;
@@ -91,7 +91,7 @@ public class DataList
      * We use 64MB (the default HDFS block getSize) as the getSize of the memory pool so we can flush the data 1 block
      * at a time to the filesystem. We will use default value of 8 block sizes to be cached in memory
      */
-    this(identifier, 64 * 1024 * 1024, 8);
+    this(identifier, 32 * 1024 * 1024, 8);
   }
 
   public int getBlockSize()
@@ -423,10 +423,11 @@ public class DataList
   public byte[] newBuffer(final int size)
   {
     if (size > blockSize) {
-      logger.error("Tuple size {} exceeds buffer server current block size {}. Please decrease tuple size. " +
-          "Proceeding with allocating larger block that may cause out of memory exception.", size, blockSize);
+      logger.debug("Tuple size {} exceeds buffer server current block size {}. Please decrease tuple size. " +
+          "Proceeding with allocating larger block that may cause out of memory exception.", size, blockSize, new Exception());
       return new byte[size];
     }
+    
     return new byte[blockSize];
   }
 
@@ -457,6 +458,11 @@ public class DataList
     return last.writingOffset;
   }
 
+  public void setBlockSize(int blockSize)
+  {
+    this.blockSize = blockSize;
+  }
+
   public static class Status
   {
     public long numBytesWaiting = 0;
@@ -470,7 +476,7 @@ public class DataList
 
     // When the number of subscribers becomes high or the number of blocks becomes high, consider optimize it.
     Block b = first;
-    Map<Block, Integer> indices = new HashMap<Block, Integer>();
+    Map<Block, Integer> indices = new HashMap<>();
     int i = 0;
     while (b != null) {
       indices.put(b, i++);

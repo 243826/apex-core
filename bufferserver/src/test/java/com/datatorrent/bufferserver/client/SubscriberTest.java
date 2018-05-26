@@ -66,7 +66,7 @@ public class SubscriberTest
     eventloopServer.start();
     eventloopClient.start();
 
-    instance = new Server(0, 64, 2);
+    instance = new Server(0, 2);
     address = instance.run(eventloopServer);
     assertTrue(address instanceof InetSocketAddress);
     assertFalse(address.isUnresolved());
@@ -110,7 +110,7 @@ public class SubscriberTest
     eventloopClient.connect(address, bss1);
 
     final int baseWindow = 0x7afebabe;
-    bsp1.activate(null, baseWindow, 0);
+    bsp1.activate(null, baseWindow, 0, 64);
     bss1.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
 
     final AtomicBoolean publisherRun = new AtomicBoolean(true);
@@ -159,7 +159,7 @@ public class SubscriberTest
      */
     final Publisher bsp2 = new Publisher("MyPublisher");
     eventloopClient.connect(address, bsp2);
-    bsp2.activate(null, 0x7afebabe, 5);
+    bsp2.activate(null, 0x7afebabe, 5, 64);
 
     final Subscriber bss2 = new Subscriber("MyPublisher")
     {

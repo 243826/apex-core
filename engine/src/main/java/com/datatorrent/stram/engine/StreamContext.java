@@ -50,6 +50,7 @@ public class StreamContext extends DefaultAttributeMap implements Context
   public static final Attribute<byte[]> BUFFER_SERVER_TOKEN = new Attribute<>(null, null);
   public static final Attribute<EventLoop> EVENT_LOOP = new Attribute<>(null, null);
   public static final Attribute<StreamCodec<?>> CODEC = new Attribute<StreamCodec<?>>(new DefaultStatefulStreamCodec<>(), null);
+  public static final Attribute<Integer> BLOCK_MEMORY = new Attribute<Integer>(4096);
 
   @Override
   public AttributeMap getAttributes()

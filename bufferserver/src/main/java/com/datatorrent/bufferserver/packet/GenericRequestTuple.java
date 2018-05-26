@@ -27,7 +27,8 @@ import com.datatorrent.bufferserver.util.Codec;
 import com.celeral.netlet.util.VarInt;
 
 /**
- * <p>GenericRequestTuple class.</p>
+ * <p>
+ * GenericRequestTuple class.</p>
  *
  * @since 0.3.2
  */
@@ -51,7 +52,7 @@ public class GenericRequestTuple extends RequestTuple
   }
 
   @Override
-  public void parse()
+  public  int parse()
   {
     parsed = true;
 
@@ -68,11 +69,13 @@ public class GenericRequestTuple extends RequestTuple
         }
         version = new String(buffer, dataOffset, idlen);
         dataOffset += idlen;
-      } else if (idlen == 0) {
+      }
+      else if (idlen == 0) {
         version = EMPTY_STRING;
         dataOffset++;
-      } else {
-        return;
+      }
+      else {
+        return dataOffset;
       }
       /*
        * read the identifier.
@@ -83,11 +86,13 @@ public class GenericRequestTuple extends RequestTuple
         }
         identifier = new String(buffer, dataOffset, idlen);
         dataOffset += idlen;
-      } else if (idlen == 0) {
+      }
+      else if (idlen == 0) {
         identifier = EMPTY_STRING;
         dataOffset++;
-      } else {
-        return;
+      }
+      else {
+        return dataOffset;
       }
 
       baseSeconds = readVarInt(dataOffset, limit);
@@ -99,9 +104,12 @@ public class GenericRequestTuple extends RequestTuple
       }
 
       valid = true;
-    } catch (NumberFormatException nfe) {
+    }
+    catch (NumberFormatException nfe) {
       logger.warn("Unparseable Tuple", nfe);
     }
+    
+    return dataOffset;
   }
 
   @Override
@@ -128,11 +136,9 @@ public class GenericRequestTuple extends RequestTuple
     return identifier;
   }
 
-  public static byte[] getSerializedRequest(String version, String identifier, long startingWindowId, byte type)
+  protected static int getSerializedRequest(byte[] array, int offset, int limit,
+                                            byte type, String version, String identifier, long startingWindowId)
   {
-    byte[] array = new byte[4096];
-    int offset = 0;
-
     /* write the type */
     array[offset++] = type;
 
@@ -151,16 +157,23 @@ public class GenericRequestTuple extends RequestTuple
 
     /* write the windowId */
     int windowId = (int)startingWindowId;
-    offset = VarInt.write(windowId, array, offset);
 
+    return VarInt.write(windowId, array, offset);
+  }
+
+  public static byte[] getSerializedRequest(String version, String identifier, long startingWindowId, byte type)
+  {
+    byte[] array = new byte[4096];
+    int offset = getSerializedRequest(array, 0, array.length,
+                                      type, version, identifier, startingWindowId);
     return Arrays.copyOfRange(array, 0, offset);
   }
 
   @Override
   public String toString()
   {
-    return getClass().getSimpleName() + "{" + "version=" + version + ", identifier=" + identifier + ", windowId=" +
-        Codec.getStringWindowId((long)baseSeconds | windowId) + '}';
+    return getClass().getSimpleName() + "{" + "version=" + version + ", identifier=" + identifier + ", windowId="
+           + Codec.getStringWindowId((long)baseSeconds | windowId) + '}';
   }
 
   private static final Logger logger = LoggerFactory.getLogger(GenericRequestTuple.class);

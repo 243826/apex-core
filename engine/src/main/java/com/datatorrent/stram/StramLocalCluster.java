@@ -314,7 +314,7 @@ public class StramLocalCluster implements Runnable, Controller
         blockCount = 8;
       }
       LOG.warn("blockcount = {}", blockCount);
-      bufferServer = new Server(0, 64 * 1024 * 1024, blockCount);
+      bufferServer = new Server(0, blockCount);
       bufferServer.setSpoolStorage(new DiskStorage());
       SocketAddress bindAddr = bufferServer.run(StreamingContainer.eventloop);
       this.bufferServerAddress = ((InetSocketAddress)bindAddr);

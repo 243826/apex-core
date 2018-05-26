@@ -60,7 +60,7 @@ public class DiskStorageTest
     eventloopClient = DefaultEventLoop.createEventLoop("client");
     eventloopClient.start();
 
-    instance = new Server(0, 1024,8);
+    instance = new Server(0, 8);
     instance.setSpoolStorage(new DiskStorage());
 
     address = instance.run(eventloopServer);
@@ -88,9 +88,8 @@ public class DiskStorageTest
   @SuppressWarnings("SleepWhileInLoop")
   public void testStorage() throws InterruptedException
   {
+    bsp.activate(null, 0x7afebabe, 0, 1024);
     bss.activate(null, "BufferServerOutput/BufferServerSubscriber", "MyPublisher", 0, null, 0L, 0);
-
-    bsp.activate(null, 0x7afebabe, 0);
 
     long windowId = 0x7afebabe00000000L;
     bsp.publishMessage(BeginWindowTuple.getSerializedTuple((int)windowId));

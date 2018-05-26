@@ -169,7 +169,8 @@ public class StreamingContainer extends YarnContainerMain
   static {
     try {
       eventloop = DefaultEventLoop.createEventLoop("ProcessWideEventLoop");
-    } catch (IOException io) {
+    }
+    catch (IOException io) {
       throw new RuntimeException(io);
     }
   }
@@ -220,13 +221,14 @@ public class StreamingContainer extends YarnContainerMain
           if (blocksize < 1) {
             blocksize = 1;
           }
-        } else {
+        }
+        else {
           blocksize = 64;
           blockCount = bufferServerRAM / blocksize;
           blockCount = Math.max(blockCount, 8);
         }
         // start buffer server, if it was not set externally
-        bufferServer = new Server(0, blocksize * 1024 * 1024, blockCount);
+        bufferServer = new Server(0, blockCount);
         bufferServer.setAuthToken(ctx.getValue(StreamingContainerContext.BUFFER_SERVER_TOKEN));
         if (ctx.getValue(Context.DAGContext.BUFFER_SPOOLING)) {
           bufferServer.setSpoolStorage(new DiskStorage());
@@ -235,7 +237,8 @@ public class StreamingContainer extends YarnContainerMain
         logger.debug("Buffer server started: {}", bindAddr);
         this.bufferServerAddress = NetUtils.getConnectAddress(((InetSocketAddress)bindAddr));
       }
-    } catch (IOException ex) {
+    }
+    catch (IOException ex) {
       logger.warn("deploy request failed due to {}", ex);
       throw new IllegalStateException("Failed to deploy buffer server", ex);
     }
@@ -250,7 +253,8 @@ public class StreamingContainer extends YarnContainerMain
         }
 
         eventBus.subscribe(newInstance);
-      } catch (InstantiationException | IllegalAccessException ex) {
+      }
+      catch (InstantiationException | IllegalAccessException ex) {
         logger.warn("Container Event Listener Instantiation", ex);
       }
     }
@@ -267,6 +271,7 @@ public class StreamingContainer extends YarnContainerMain
    * This method is introduced as replacement for getTupleRecorder method which was cluttering the code.
    *
    * @param classname
+   *
    * @return
    */
   public Object getInstance(String classname)
@@ -283,6 +288,7 @@ public class StreamingContainer extends YarnContainerMain
    * processing threads.
    *
    * @param args
+   *
    * @throws Throwable
    */
   public static void main(String[] args) throws Throwable
@@ -311,20 +317,24 @@ public class StreamingContainer extends YarnContainerMain
         /* main thread enters heartbeat loop */
         stramChild.heartbeatLoop();
         exitStatus = 0;
-      } finally {
+      }
+      finally {
         stramChild.teardown();
       }
-    } catch (Error error) {
+    }
+    catch (Error error) {
       logger.error("Fatal error in container!", error);
       /* Report back any failures, for diagnostic purposes */
       String msg = ExceptionUtils.getStackTrace(error);
       umbilical.reportError(childId, null, "FATAL: " + msg);
-    } catch (Exception exception) {
+    }
+    catch (Exception exception) {
       logger.error("Fatal exception in container!", exception);
       /* Report back any failures, for diagnostic purposes */
       String msg = ExceptionUtils.getStackTrace(exception);
       umbilical.reportError(childId, null, msg);
-    } finally {
+    }
+    finally {
       rpcProxy.close();
       DefaultMetricsSystem.shutdown();
       logger.info("Exit status for container: {}", exitStatus);
@@ -345,7 +355,8 @@ public class StreamingContainer extends YarnContainerMain
       Thread t = e.getValue().context.getThread();
       if (t == null || !t.isAlive()) {
         disconnectNode(e.getKey());
-      } else {
+      }
+      else {
         activeThreads.add(t);
         activeOperators.add(e.getKey());
         e.getValue().shutdown();
@@ -361,7 +372,8 @@ public class StreamingContainer extends YarnContainerMain
         }
         disconnectNode(iterator.next());
       }
-    } catch (InterruptedException ex) {
+    }
+    catch (InterruptedException ex) {
       logger.warn("Aborting wait for operators to get deactivated!", ex);
     }
 
@@ -396,13 +408,15 @@ public class StreamingContainer extends YarnContainerMain
           String sinks = pair.context.getSinkId();
           if (sinks == null) {
             logger.error("mux sinks found connected at {} with sink id null", sourceIdentifier);
-          } else {
+          }
+          else {
             String[] split = sinks.split(MuxStream.MULTI_SINK_ID_CONCAT_SEPARATOR);
-            for (int i = split.length; i-- > 0; ) {
+            for (int i = split.length; i-- > 0;) {
               ComponentContextPair<Stream, StreamContext> spair = streams.remove(split[i]);
               if (spair == null) {
                 logger.error("mux is missing the stream for sink {}", split[i]);
-              } else {
+              }
+              else {
                 if (activeStreams.remove(spair.component) != null) {
                   spair.component.deactivate();
                   eventBus.publish(new StreamDeactivationEvent(spair));
@@ -412,7 +426,8 @@ public class StreamingContainer extends YarnContainerMain
               }
             }
           }
-        } else {
+        }
+        else {
           // it's either inline stream or it's bufferserver publisher.
         }
 
@@ -440,7 +455,8 @@ public class StreamingContainer extends YarnContainerMain
           if (sourcePair == pair) {
             /* for some reason we had the stream stored against both source and sink identifiers */
             streams.remove(pair.context.getSourceId());
-          } else {
+          }
+          else {
             /* the stream was one of the many streams sourced by a muxstream */
             unregisterSinkFromMux(sourcePair, sinkIdentifier);
           }
@@ -453,7 +469,7 @@ public class StreamingContainer extends YarnContainerMain
   {
     String[] sinks = muxpair.context.getSinkId().split(MuxStream.MULTI_SINK_ID_CONCAT_SEPARATOR);
     boolean found = false;
-    for (int i = sinks.length; i-- > 0; ) {
+    for (int i = sinks.length; i-- > 0;) {
       if (sinks[i].equals(sinkIdentifier)) {
         sinks[i] = null;
         found = true;
@@ -472,15 +488,17 @@ public class StreamingContainer extends YarnContainerMain
           eventBus.publish(new StreamDeactivationEvent(muxpair));
         }
         muxpair.component.teardown();
-      } else {
+      }
+      else {
         StringBuilder builder = new StringBuilder(muxpair.context.getSinkId().length() - MuxStream.MULTI_SINK_ID_CONCAT_SEPARATOR.length() - sinkIdentifier.length());
 
         found = false;
-        for (int i = sinks.length; i-- > 0; ) {
+        for (int i = sinks.length; i-- > 0;) {
           if (sinks[i] != null) {
             if (found) {
               builder.append(MuxStream.MULTI_SINK_ID_CONCAT_SEPARATOR).append(sinks[i]);
-            } else {
+            }
+            else {
               builder.append(sinks[i]);
               found = true;
             }
@@ -489,7 +507,8 @@ public class StreamingContainer extends YarnContainerMain
 
         muxpair.context.setSinkId(builder.toString());
       }
-    } else {
+    }
+    else {
       logger.error("{} was not connected to stream connected to {}", sinkIdentifier, muxpair.context.getSourceId());
     }
 
@@ -528,9 +547,11 @@ public class StreamingContainer extends YarnContainerMain
       Node<?> node = nodes.get(operatorId);
       if (node == null) {
         throw new IllegalArgumentException("Node " + operatorId + " is not hosted in this container!");
-      } else if (toUndeploy.containsKey(operatorId)) {
+      }
+      else if (toUndeploy.containsKey(operatorId)) {
         throw new IllegalArgumentException("Node " + operatorId + " is requested to be undeployed more than once");
-      } else {
+      }
+      else {
         toUndeploy.put(operatorId, node);
       }
     }
@@ -541,7 +562,8 @@ public class StreamingContainer extends YarnContainerMain
       Thread t = nodes.get(operatorId).context.getThread();
       if (t == null || !t.isAlive()) {
         disconnectNode(operatorId);
-      } else {
+      }
+      else {
         joinList.add(t);
         discoList.add(operatorId);
         nodes.get(operatorId).shutdown();
@@ -558,7 +580,8 @@ public class StreamingContainer extends YarnContainerMain
         disconnectNode(iterator.next());
       }
       logger.info("Undeploy complete.");
-    } catch (InterruptedException ex) {
+    }
+    catch (InterruptedException ex) {
       logger.warn("Aborting wait for operators to get deactivated!", ex);
     }
 
@@ -624,7 +647,8 @@ public class StreamingContainer extends YarnContainerMain
       synchronized (this.heartbeatTrigger) {
         try {
           this.heartbeatTrigger.wait(heartbeatIntervalMillis);
-        } catch (InterruptedException e1) {
+        }
+        catch (InterruptedException e1) {
           logger.warn("Interrupted in heartbeat loop, exiting..");
           break;
         }
@@ -669,9 +693,11 @@ public class StreamingContainer extends YarnContainerMain
 
           if (context.getThread() == null || context.getThread().getState() != Thread.State.TERMINATED) {
             hb.setState(DeployState.ACTIVE);
-          } else if (failedNodes.contains(hb.nodeId)) {
+          }
+          else if (failedNodes.contains(hb.nodeId)) {
             hb.setState(DeployState.FAILED);
-          } else {
+          }
+          else {
             logger.info("Reporting SHUTDOWN state because thread is {} and failedNodes is {}", context.getThread(), failedNodes);
             hb.setState(DeployState.SHUTDOWN);
           }
@@ -698,7 +724,8 @@ public class StreamingContainer extends YarnContainerMain
 
         if (rsp.stackTraceRequired) {
           stackTrace = StramUtils.getStackTrace().toString();
-        } else {
+        }
+        else {
           stackTrace = null;
         }
 
@@ -713,13 +740,15 @@ public class StreamingContainer extends YarnContainerMain
           synchronized (this.heartbeatTrigger) {
             try {
               this.heartbeatTrigger.wait(500);
-            } catch (InterruptedException ie) {
+            }
+            catch (InterruptedException ie) {
               logger.warn("Interrupted in heartbeat loop", ie);
               break;
             }
           }
         }
-      } while (rsp.hasPendingRequests);
+      }
+      while (rsp.hasPendingRequests);
 
     }
     logger.debug("Exiting hearbeat loop");
@@ -751,12 +780,14 @@ public class StreamingContainer extends YarnContainerMain
           logger.warn("Received request with invalid operator id {} ({})", req.getOperatorId(), req);
           req.setDeleted(true);
         }
-      } else {
+      }
+      else {
         logger.debug("request received: {}", req);
         OperatorRequest requestExecutor = requestFactory.getRequestExecutor(nodes.get(req.operatorId), req);
         if (requestExecutor != null) {
           node.context.request(requestExecutor);
-        } else {
+        }
+        else {
           logger.warn("No executor identified for the request {}", req);
         }
         req.setDeleted(true);
@@ -815,11 +846,13 @@ public class StreamingContainer extends YarnContainerMain
       logger.info("Deploy request: {}", rsp.deployRequest);
       try {
         deploy(rsp.deployRequest);
-      } catch (Exception e) {
+      }
+      catch (Exception e) {
         logger.error("deploy request failed", e);
         try {
           umbilical.log(this.containerId, "deploy request failed: " + rsp.deployRequest + " " + ExceptionUtils.getStackTrace(e));
-        } catch (IOException ioe) {
+        }
+        catch (IOException ioe) {
           // ignore
         }
         this.exitHeartbeatLoop = true;
@@ -900,7 +933,8 @@ public class StreamingContainer extends YarnContainerMain
         OperatorContext unifiedOperatorContext = new OperatorContext(0, ((UnifierDeployInfo)ndi).operatorAttributes, containerContext);
         parentContext = new PortContext(ndi.inputs.get(0).contextAttributes, unifiedOperatorContext);
         massageUnifierDeployInfo(ndi);
-      } else {
+      }
+      else {
         parentContext = containerContext;
       }
 
@@ -920,9 +954,9 @@ public class StreamingContainer extends YarnContainerMain
   }
 
   private HashMap.SimpleEntry<String, ComponentContextPair<Stream, StreamContext>> deployBufferServerPublisher(
-      String connIdentifier, StreamCodec<?> streamCodec, long finishedWindowId, int queueCapacity,
-      OperatorDeployInfo.OutputDeployInfo nodi)
-      throws UnknownHostException
+  String connIdentifier, StreamCodec<?> streamCodec, long finishedWindowId, int queueCapacity, int blockSize,
+  OperatorDeployInfo.OutputDeployInfo nodi)
+  throws UnknownHostException
   {
     String sinkIdentifier = "tcp://".concat(nodi.bufferServerHost).concat(":").concat(String.valueOf(nodi.bufferServerPort)).concat("/").concat(connIdentifier);
 
@@ -935,6 +969,7 @@ public class StreamingContainer extends YarnContainerMain
     bssc.put(StreamContext.EVENT_LOOP, eventloop);
     bssc.setBufferServerAddress(InetSocketAddress.createUnresolved(nodi.bufferServerHost, nodi.bufferServerPort));
     bssc.put(StreamContext.BUFFER_SERVER_TOKEN, nodi.bufferServerToken);
+    bssc.put(StreamContext.BLOCK_MEMORY, blockSize);
     InetAddress inetAddress = bssc.getBufferServerAddress().getAddress();
     if (inetAddress != null && NetUtils.isLocalAddress(inetAddress)) {
       bssc.setBufferServerAddress(new InetSocketAddress(InetAddress.getByName(null), nodi.bufferServerPort));
@@ -945,8 +980,8 @@ public class StreamingContainer extends YarnContainerMain
   }
 
   private HashMap<String, ComponentContextPair<Stream, StreamContext>> deployOutputStreams(
-      List<OperatorDeployInfo> nodeList, HashMap<String, ArrayList<String>> groupedInputStreams)
-      throws Exception
+  List<OperatorDeployInfo> nodeList, HashMap<String, ArrayList<String>> groupedInputStreams)
+  throws Exception
   {
     HashMap<String, ComponentContextPair<Stream, StreamContext>> newStreams = new HashMap<>();
     /*
@@ -979,11 +1014,14 @@ public class StreamingContainer extends YarnContainerMain
           Integer streamCodecIdentifier = entry.getKey();
           String connIdentifier = sourceIdentifier + Component.CONCAT_SEPARATOR + streamCodecIdentifier;
 
-          SimpleEntry<String, ComponentContextPair<Stream, StreamContext>> deployBufferServerPublisher =
-              deployBufferServerPublisher(connIdentifier, streamCodec, checkpointWindowId, queueCapacity, nodi);
+          SimpleEntry<String, ComponentContextPair<Stream, StreamContext>> deployBufferServerPublisher
+          = deployBufferServerPublisher(connIdentifier, streamCodec, checkpointWindowId, queueCapacity,
+                                        getValue(PortContext.BUFFER_MEMORY_MB, nodi, ndi) * 1024 * 1024 / 8,
+                                        nodi);
           newStreams.put(sourceIdentifier, deployBufferServerPublisher.getValue());
           node.connectOutputPort(nodi.portName, deployBufferServerPublisher.getValue().component);
-        } else {
+        }
+        else {
           /*
            * In this case we have 2 possibilities, either we have 1 inline or multiple streams.
            * Since we cannot tell at this point, we assume that we will have multiple streams and
@@ -1018,14 +1056,17 @@ public class StreamingContainer extends YarnContainerMain
 
               String connIdentifier = sourceIdentifier + Component.CONCAT_SEPARATOR + streamCodecIdentifier;
 
-              SimpleEntry<String, ComponentContextPair<Stream, StreamContext>> deployBufferServerPublisher =
-                  deployBufferServerPublisher(connIdentifier, streamCodec, checkpointWindowId, queueCapacity, nodi);
+              SimpleEntry<String, ComponentContextPair<Stream, StreamContext>> deployBufferServerPublisher
+              = deployBufferServerPublisher(connIdentifier, streamCodec, checkpointWindowId, queueCapacity,
+                                            getValue(PortContext.BUFFER_MEMORY_MB, nodi, ndi) * 1024 * 1024 / 8,
+                                            nodi);
               newStreams.put(deployBufferServerPublisher.getKey(), deployBufferServerPublisher.getValue());
 
               String sinkIdentifier = pair.context.getSinkId();
               if (sinkIdentifier == null) {
                 pair.context.setSinkId(deployBufferServerPublisher.getKey());
-              } else {
+              }
+              else {
                 pair.context.setSinkId(sinkIdentifier.concat(", ").concat(deployBufferServerPublisher.getKey()));
               }
 
@@ -1044,6 +1085,7 @@ public class StreamingContainer extends YarnContainerMain
    *
    * @param operatorId id of the operator to which the port belongs.
    * @param portname   name of port to which the stream is connected.
+   *
    * @return Stream Id if connected, null otherwise.
    */
   public final String getDeclaredStreamId(int operatorId, String portname)
@@ -1092,7 +1134,8 @@ public class StreamingContainer extends YarnContainerMain
         if (ndi.checkpoint.windowId < smallestCheckpointedWindowId) {
           smallestCheckpointedWindowId = ndi.checkpoint.windowId;
         }
-      } else {
+      }
+      else {
         Node<?> node = nodes.get(ndi.id);
 
         for (OperatorDeployInfo.InputDeployInfo nidi : ndi.inputs) {
@@ -1140,8 +1183,8 @@ public class StreamingContainer extends YarnContainerMain
             context.setFinishedWindowId(checkpoint.windowId);
 
             BufferServerSubscriber subscriber = fastPublisherSubscriber
-                ? new FastSubscriber("tcp://".concat(nidi.bufferServerHost).concat(":").concat(String.valueOf(nidi.bufferServerPort)).concat("/").concat(connIdentifier), queueCapacity)
-                : new BufferServerSubscriber("tcp://".concat(nidi.bufferServerHost).concat(":").concat(String.valueOf(nidi.bufferServerPort)).concat("/").concat(connIdentifier), queueCapacity);
+            ? new FastSubscriber("tcp://".concat(nidi.bufferServerHost).concat(":").concat(String.valueOf(nidi.bufferServerPort)).concat("/").concat(connIdentifier), queueCapacity)
+            : new BufferServerSubscriber("tcp://".concat(nidi.bufferServerHost).concat(":").concat(String.valueOf(nidi.bufferServerPort)).concat("/").concat(connIdentifier), queueCapacity);
             if (streamCodec instanceof StreamCodecWrapperForPersistance) {
               subscriber.acquireReservoirForPersistStream(sinkIdentifier, queueCapacity, streamCodec);
             }
@@ -1153,7 +1196,8 @@ public class StreamingContainer extends YarnContainerMain
 
             newStreams.put(sinkIdentifier, new ComponentContextPair<Stream, StreamContext>(subscriber, context));
             logger.debug("put input stream {} against key {}", subscriber, sinkIdentifier);
-          } else {
+          }
+          else {
             assert (nidi.locality == Locality.CONTAINER_LOCAL || nidi.locality == Locality.THREAD_LOCAL);
             /* we are still dealing with the MuxStream originating at the output of the source port */
             StreamContext inlineContext = new StreamContext(nidi.declaredStreamId);
@@ -1173,7 +1217,7 @@ public class StreamingContainer extends YarnContainerMain
                 reservoir = ((InlineStream)stream).getReservoir();
                 if (checkpoint.windowId >= 0) {
                   node.connectInputPort(nidi.portName, new WindowIdActivatedReservoir(sinkIdentifier, reservoir,
-                      checkpoint.windowId));
+                                                                                      checkpoint.windowId));
                 }
                 break;
 
@@ -1214,13 +1258,16 @@ public class StreamingContainer extends YarnContainerMain
               PartitionAwareSinkForPersistence pas;
               if (nidi.partitionKeys == null) {
                 pas = new PartitionAwareSinkForPersistence((StreamCodecWrapperForPersistance<Object>)streamCodec, nidi.partitionMask, stream);
-              } else {
+              }
+              else {
                 pas = new PartitionAwareSinkForPersistence((StreamCodecWrapperForPersistance<Object>)streamCodec, nidi.partitionKeys, nidi.partitionMask, stream);
               }
               ((Stream.MultiSinkCapableStream)pair.component).setSink(sinkIdentifier, pas);
-            } else if (nidi.partitionKeys == null || nidi.partitionKeys.isEmpty()) {
+            }
+            else if (nidi.partitionKeys == null || nidi.partitionKeys.isEmpty()) {
               ((Stream.MultiSinkCapableStream)pair.component).setSink(sinkIdentifier, stream);
-            } else {
+            }
+            else {
               /*
                * generally speaking we do not have partitions on the inline streams so the control should not
                * come here but if it comes, then we are ready to handle it using the partition aware streams.
@@ -1232,7 +1279,8 @@ public class StreamingContainer extends YarnContainerMain
             String streamSinkId = pair.context.getSinkId();
             if (streamSinkId == null) {
               pair.context.setSinkId(sinkIdentifier);
-            } else {
+            }
+            else {
               pair.context.setSinkId(streamSinkId.concat(", ").concat(sinkIdentifier));
             }
           }
@@ -1285,6 +1333,7 @@ public class StreamingContainer extends YarnContainerMain
    * This is a hook for tests to control the window generation.
    *
    * @param finishedWindowId
+   *
    * @return WindowGenerator
    */
   protected WindowGenerator setupWindowGenerator(long finishedWindowId)
@@ -1334,7 +1383,7 @@ public class StreamingContainer extends YarnContainerMain
     outputPorts.putAll(newOutputPorts);
 
     logger.debug("activating {} in container {}", node, containerId);
-    /* This introduces need for synchronization on processNodeRequest which was solved by adding deleted field in StramToNodeRequest  */
+    /* This introduces need for synchronization on processNodeRequest which was solved by adding deleted field in StramToNodeRequest */
     processNodeRequests(false);
     node.activate();
     eventBus.publish(new NodeActivationEvent(node));
@@ -1345,7 +1394,8 @@ public class StreamingContainer extends YarnContainerMain
     final Node<?> node = nodes.get(ndi.id);
     if (node == null) {
       logger.warn("node {}/{} took longer to exit, resulting in unclean undeploy!", ndi.id, ndi.name);
-    } else {
+    }
+    else {
       eventBus.publish(new NodeDeactivationEvent(node));
       node.deactivate();
       node.teardown();
@@ -1374,11 +1424,11 @@ public class StreamingContainer extends YarnContainerMain
 
       final Node<?> node = nodes.get(ndi.id);
       final String name = new StringBuilder(Integer.toString(ndi.id))
-          .append('/')
-          .append(ndi.name)
-          .append(':')
-          .append(node.getOperator().getClass().getSimpleName())
-          .toString();
+      .append('/')
+      .append(ndi.name)
+      .append(':')
+      .append(node.getOperator().getClass().getSimpleName())
+      .toString();
       final Thread thread = new Thread(name)
       {
         @Override
@@ -1403,12 +1453,14 @@ public class StreamingContainer extends YarnContainerMain
 
             currentdi = null;
 
-            for (int i = setOperators.size(); i-- > 0; ) {
+            for (int i = setOperators.size(); i-- > 0;) {
               signal.countDown();
             }
 
-            node.run(); /* this is a blocking call */
-          } catch (Error error) {
+            node.run();
+            /* this is a blocking call */
+          }
+          catch (Error error) {
             int[] operators;
             if (currentdi == null) {
               logger.error("Voluntary container termination due to an error in operator set {}.", setOperators, error);
@@ -1417,33 +1469,39 @@ public class StreamingContainer extends YarnContainerMain
               for (Iterator<OperatorDeployInfo> it = setOperators.iterator(); it.hasNext(); i++) {
                 operators[i] = it.next().id;
               }
-            } else {
+            }
+            else {
               logger.error("Voluntary container termination due to an error in operator {}.", currentdi, error);
               operators = new int[]{currentdi.id};
             }
             umbilical.reportError(containerId, operators, "Voluntary container termination due to an error. " + ExceptionUtils.getStackTrace(error));
             System.exit(1);
-          } catch (Exception ex) {
+          }
+          catch (Exception ex) {
             if (currentdi == null) {
               failedNodes.add(ndi.id);
               logger.error("Operator set {} stopped running due to an exception.", setOperators, ex);
               int[] operators = new int[]{ndi.id};
               umbilical.reportError(containerId, operators, "Stopped running due to an exception. " + ExceptionUtils.getStackTrace(ex));
-            } else {
+            }
+            else {
               failedNodes.add(currentdi.id);
               logger.error("Abandoning deployment of operator {} due to setup failure.", currentdi, ex);
               int[] operators = new int[]{currentdi.id};
               umbilical.reportError(containerId, operators, "Abandoning deployment due to setup failure. " + ExceptionUtils.getStackTrace(ex));
             }
-          } finally {
+          }
+          finally {
             if (setOperators.contains(ndi)) {
               try {
                 teardownNode(ndi);
-              } catch (Exception ex) {
+              }
+              catch (Exception ex) {
                 failedNodes.add(ndi.id);
                 logger.error("Shutdown of operator {} failed due to an exception.", ndi, ex);
               }
-            } else {
+            }
+            else {
               signal.countDown();
             }
 
@@ -1454,11 +1512,13 @@ public class StreamingContainer extends YarnContainerMain
                 if (setOperators.contains(oiodi)) {
                   try {
                     teardownNode(oiodi);
-                  } catch (Exception ex) {
+                  }
+                  catch (Exception ex) {
                     failedNodes.add(oiodi.id);
                     logger.error("Shutdown of operator {} failed due to an exception.", oiodi, ex);
                   }
-                } else {
+                }
+                else {
                   signal.countDown();
                 }
               }
@@ -1475,7 +1535,8 @@ public class StreamingContainer extends YarnContainerMain
      */
     try {
       signal.await();
-    } catch (InterruptedException ex) {
+    }
+    catch (InterruptedException ex) {
       logger.debug("Activation of operators interrupted.", ex);
     }
 
@@ -1539,11 +1600,12 @@ public class StreamingContainer extends YarnContainerMain
       int lCheckpointWindowCount = (int)(windowCount % temp);
       checkpoint = new Checkpoint(WindowGenerator.getWindowId(now, firstWindowMillis, windowWidthMillis), appWindowCount, lCheckpointWindowCount);
       logger.debug("using {} on {} at {}", ProcessingMode.AT_MOST_ONCE, ndi.name, checkpoint);
-    } else {
+    }
+    else {
       checkpoint = ndi.checkpoint;
       logger.debug("using {} on {} at {}",
-          ndi.contextAttributes == null ? ProcessingMode.AT_LEAST_ONCE : (ndi.contextAttributes.get(OperatorContext.PROCESSING_MODE) == null ? ProcessingMode.AT_LEAST_ONCE : ndi.contextAttributes.get(OperatorContext.PROCESSING_MODE)),
-          ndi.name, checkpoint);
+                   ndi.contextAttributes == null ? ProcessingMode.AT_LEAST_ONCE : (ndi.contextAttributes.get(OperatorContext.PROCESSING_MODE) == null ? ProcessingMode.AT_LEAST_ONCE : ndi.contextAttributes.get(OperatorContext.PROCESSING_MODE)),
+                   ndi.name, checkpoint);
     }
 
     return checkpoint;
@@ -1555,7 +1617,8 @@ public class StreamingContainer extends YarnContainerMain
       for (Component<ContainerContext> c : components) {
         c.setup(ctx);
       }
-    } else {
+    }
+    else {
       for (Component<ContainerContext> c : components) {
         c.teardown();
       }
@@ -1572,6 +1635,7 @@ public class StreamingContainer extends YarnContainerMain
    * @param key         Name of the attribute.
    * @param portContext Port context if applicable otherwise null.
    * @param deployInfo  Operator context if applicable otherwise null.
+   *
    * @return Value of the operator
    */
   private <T> T getValue(Attribute<T> key, com.datatorrent.api.Context.PortContext portContext, OperatorDeployInfo deployInfo)

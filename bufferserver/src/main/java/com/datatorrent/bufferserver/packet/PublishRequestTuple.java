@@ -18,22 +18,61 @@
  */
 package com.datatorrent.bufferserver.packet;
 
+import java.util.Arrays;
+
+import com.celeral.netlet.util.Throwables;
+import com.celeral.netlet.util.VarInt;
+
 /**
- * <p>PublishRequestTuple class.</p>
+ * <p>
+ * PublishRequestTuple class.</p>
  *
  * @since 0.3.2
  */
 public class PublishRequestTuple extends GenericRequestTuple
 {
+  protected int blockSize;
+
   public PublishRequestTuple(byte[] array, int offset, int len)
   {
     super(array, offset, len);
   }
 
-  public static byte[] getSerializedRequest(final String version, final String identifier, final long startingWindowId)
+  @Override
+  public int parse()
   {
-    return GenericRequestTuple.getSerializedRequest(version, identifier, startingWindowId,
-        MessageType.PUBLISHER_REQUEST_VALUE);
+    int dataOffset = super.parse();
+    if (isValid()) {
+      try {
+        blockSize = readVarInt(dataOffset, offset + length);
+        while (buffer[dataOffset++] < 0) {
+        }
+      }
+      catch (NumberFormatException ex) {
+        Throwables.throwFormatted(ex, RuntimeException.class,
+                                  "Unable to parse the blockSize!", ex);
+      }
+    }
+
+    return dataOffset;
   }
 
+  public static byte[] getSerializedRequest(final String version,
+                                            final String identifier,
+                                            final long startingWindowId,
+                                            final int blockSize)
+  {
+    byte[] bytes = new byte[4096];
+    int offset = getSerializedRequest(bytes, 0, bytes.length,
+                                      MessageType.PUBLISHER_REQUEST_VALUE, version, identifier, startingWindowId);
+
+    /* write the blocksize at the end of the array */
+    offset = VarInt.write(blockSize, bytes, offset);
+    return Arrays.copyOfRange(bytes, 0, offset);
+  }
+  
+  public int getBlockSize()
+  {
+    return blockSize;
+  }
 }

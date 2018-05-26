@@ -49,9 +49,9 @@ public class Publisher extends com.datatorrent.bufferserver.client.Publisher
     write(payload);
   }
 
-  public void activate(String version, int baseSeconds, int windowId)
+  public void activate(String version, int baseSeconds, int windowId, int blockSize)
   {
-    super.activate(version, (long)baseSeconds << 32 | windowId);
+    super.activate(version, (long)baseSeconds << 32 | windowId, blockSize);
   }
 
   private static final Logger logger = LoggerFactory.getLogger(Publisher.class);

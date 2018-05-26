@@ -21,7 +21,8 @@ package com.datatorrent.bufferserver.packet;
 import com.celeral.netlet.util.Slice;
 
 /**
- * <p>Abstract RequestTuple class.</p>
+ * <p>
+ * Abstract RequestTuple class.</p>
  *
  * @since 0.3.2
  */
@@ -58,7 +59,12 @@ public abstract class RequestTuple extends Tuple
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
-  public abstract void parse();
+  /**
+   * Parses the byte buffer to interpret the object.
+   *
+   * @return the offset in the array pointing to the first unparsed byte
+   */
+  public abstract int parse();
 
   public abstract String getVersion();
 

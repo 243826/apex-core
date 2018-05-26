@@ -281,7 +281,6 @@ public class StreamingContainerManager implements PlanContext, CollectionChangeL
         Integer key = entry.getKey();
         if (entry.getValue().dependees.contains(operatorId) && !processed.contains(key)) {
           processed.add(key);
-          logger.debug("!!! reseting the heartbeats for {}", key, new RuntimeException());
           beats.get(key).reset();
           pendingOperators.add(key);
         }

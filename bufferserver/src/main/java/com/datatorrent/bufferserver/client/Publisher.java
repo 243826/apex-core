@@ -48,11 +48,12 @@ public abstract class Publisher extends AuthClient
    *
    * @param version
    * @param windowId
+   * @param blockSize size of the bufferserver blocks for this publisher
    */
-  public void activate(String version, long windowId)
+  protected void activate(String version, long windowId, int blockSize)
   {
     sendAuthenticate();
-    write(PublishRequestTuple.getSerializedRequest(version, id, windowId));
+    write(PublishRequestTuple.getSerializedRequest(version, id, windowId, blockSize));
   }
 
   @Override
