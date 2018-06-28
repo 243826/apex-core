@@ -18,12 +18,13 @@
  */
 package com.datatorrent.stram;
 
-
+import java.nio.file.FileSystems;
 import java.util.Map;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,8 @@ public abstract class StramUtils
     try {
       //return Class.forName(className).asSubclass(superClass);
       return Thread.currentThread().getContextClassLoader().loadClass(className).asSubclass(superClass);
-    } catch (ClassNotFoundException e) {
+    }
+    catch (ClassNotFoundException e) {
       throw new IllegalArgumentException("Class not found: " + className, e);
     }
   }
@@ -57,9 +59,11 @@ public abstract class StramUtils
   {
     try {
       return clazz.newInstance();
-    } catch (IllegalAccessException e) {
+    }
+    catch (IllegalAccessException e) {
       throw new IllegalArgumentException("Failed to instantiate " + clazz, e);
-    } catch (InstantiationException e) {
+    }
+    catch (InstantiationException e) {
       throw new IllegalArgumentException("Failed to instantiate " + clazz, e);
     }
   }
@@ -67,6 +71,13 @@ public abstract class StramUtils
   public abstract static class YarnContainerMain
   {
     static {
+      /**
+       * lets make this call to get around https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8194653
+       */
+      synchronized (Object.class) {
+        FileSystems.getDefault();
+      }
+
       // set system properties so they can be used in logger configuration
       Map<String, String> envs = System.getenv();
       String containerIdString = envs.get(Environment.CONTAINER_ID.name());
@@ -118,7 +129,8 @@ public abstract class StramUtils
         jsonThread.put("stackTraceElements", stackTraceElements);
 
         jsonArray.put(jsonThread);
-      } catch (Exception ex) {
+      }
+      catch (Exception ex) {
         LOG.warn("Getting stack trace for the thread " + thread.getName() + " failed.");
         continue;
       }
@@ -126,7 +138,8 @@ public abstract class StramUtils
 
     try {
       jsonObject.put("threads", jsonArray);
-    } catch (JSONException e) {
+    }
+    catch (JSONException e) {
       throw new RuntimeException(e);
     }
 

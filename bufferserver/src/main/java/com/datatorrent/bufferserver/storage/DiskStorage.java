@@ -29,7 +29,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.Files;
 
 /**
- * <p>DiskStorage class.</p>
+ * <p>
+ * DiskStorage class.</p>
  *
  * @since 0.3.2
  */
@@ -66,7 +67,8 @@ public class DiskStorage implements Storage
       Character c = name.charAt(i);
       if (Character.isLetterOrDigit(c)) {
         sb.append(c);
-      } else {
+      }
+      else {
         sb.append('-');
       }
     }
@@ -89,25 +91,31 @@ public class DiskStorage implements Storage
             synchronized (this) {
               lUniqueIdentifier = ++this.uniqueIdentifier;
             }
-          } else {
-            throw new IllegalStateException("Collision in identifier name, please ensure that the slug for " +
-                "the identifiers is different");
           }
-        } catch (IOException ex) {
+          else {
+            throw new IllegalStateException("Collision in identifier name, please ensure that the slug for "
+                                            + "the identifiers is different");
+          }
+        }
+        catch (IOException ex) {
           throw new RuntimeException(ex);
         }
-      } else {
+      }
+      else {
         throw new IllegalStateException("Identity file is hijacked!");
       }
-    } else {
+    }
+    else {
       if (directory.mkdir()) {
         File identity = new File(directory, "identity");
         try {
           Files.write(identifier.getBytes(), identity);
-        } catch (IOException ex) {
+        }
+        catch (IOException ex) {
           throw new RuntimeException(ex);
         }
-      } else {
+      }
+      else {
         throw new RuntimeException("directory " + directory.getAbsolutePath() + " could not be created!");
       }
 
@@ -115,8 +123,11 @@ public class DiskStorage implements Storage
     }
 
     try {
+      logger.warn("{}.store - id = {} uid = {} bytes.lengh = {} starting = {} ending ={}",
+                  getClass(), identifier, lUniqueIdentifier, bytes.length, startingOffset, endingOffset);
       return writeFile(bytes, startingOffset, endingOffset, directory, lUniqueIdentifier);
-    } catch (IOException ex) {
+    }
+    catch (IOException ex) {
       throw new RuntimeException(ex);
     }
   }
@@ -137,22 +148,29 @@ public class DiskStorage implements Storage
               if (!deletionFile.delete()) {
                 throw new RuntimeException("File " + deletionFile.getPath() + " could not be deleted!");
               }
-            } else {
+            }
+            else {
               throw new RuntimeException("File " + deletionFile.getPath() + " either is non existent or not a file!");
             }
-          } else {
-            throw new RuntimeException("Collision in the identifier name, please ensure that the slugs for " +
-                "the identifiers are different");
           }
-        } catch (IOException ex) {
+          else {
+            throw new RuntimeException("Collision in the identifier name, please ensure that the slugs for "
+                                       + "the identifiers are different");
+          }
+        }
+        catch (IOException ex) {
           throw new RuntimeException(ex);
         }
-      } else {
+      }
+      else {
         throw new RuntimeException(identityFile + " is not a file!");
       }
-    } else {
+    }
+    else {
       throw new RuntimeException("directory " + directory.getPath() + " does not exist!");
     }
+
+    logger.warn("{}.discard id {} uid {}", getClass(), identifier, uniqueIdentifier);
   }
 
   @Override
@@ -168,28 +186,35 @@ public class DiskStorage implements Storage
           if (Arrays.equals(stored, identifier.getBytes())) {
             File filename = new File(directory, String.valueOf(uniqueIdentifier));
             if (filename.exists() && filename.isFile()) {
-              return Files.toByteArray(filename);
-            } else {
+              final byte[] bytes = Files.toByteArray(filename);
+              logger.warn("{}.retrieve id {} uid {} length {}", getClass(), identifier, uniqueIdentifier, bytes.length);
+              return bytes;
+            }
+            else {
               throw new RuntimeException("File " + filename.getPath() + " either is non existent or not a file!");
             }
-          } else {
-            throw new RuntimeException("Collision in the identifier name," +
-                " please ensure that the slugs for the identifiers [" + identifier + "], and [" +  new String(stored) +
-                "] are different.");
           }
-        } catch (IOException ex) {
+          else {
+            throw new RuntimeException("Collision in the identifier name,"
+                                       + " please ensure that the slugs for the identifiers [" + identifier + "], and [" + new String(stored)
+                                       + "] are different.");
+          }
+        }
+        catch (IOException ex) {
           throw new RuntimeException(ex);
         }
-      } else {
+      }
+      else {
         throw new RuntimeException(identityFile + " is not a file!");
       }
-    } else {
+    }
+    else {
       throw new RuntimeException("directory " + directory.getPath() + " does not exist!");
     }
   }
 
   protected int writeFile(final byte[] bytes, final int startingOffset, final int endingOffset, final File directory,
-      final int number) throws IOException
+                          final int number) throws IOException
   {
     try (FileOutputStream stream = new FileOutputStream(new File(directory, String.valueOf(number)))) {
       stream.write(bytes, startingOffset, endingOffset - startingOffset);

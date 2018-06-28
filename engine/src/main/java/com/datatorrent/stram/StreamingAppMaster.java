@@ -50,8 +50,8 @@ public class StreamingAppMaster extends StramUtils.YarnContainerMain
   private static final Logger LOG = LoggerFactory.getLogger(StreamingAppMaster.class);
 
   /**
-   * @param args
-   *          Command line args
+   * @param args Command line args
+   *
    * @throws Throwable
    */
   public static void main(final String[] args) throws Throwable
@@ -85,10 +85,12 @@ public class StreamingAppMaster extends StramUtils.YarnContainerMain
       if (cliParser.hasOption("app_attempt_id")) {
         String appIdStr = cliParser.getOptionValue("app_attempt_id", "");
         appAttemptID = ConverterUtils.toApplicationAttemptId(appIdStr);
-      } else {
+      }
+      else {
         throw new IllegalArgumentException("Application Attempt Id not set in the environment");
       }
-    } else {
+    }
+    else {
       ContainerId containerId = ConverterUtils.toContainerId(envs.get(Environment.CONTAINER_ID.name()));
       appAttemptID = containerId.getApplicationAttemptId();
     }
@@ -105,7 +107,8 @@ public class StreamingAppMaster extends StramUtils.YarnContainerMain
         LOG.info("Application Master Failed!");
         System.exit(2);
       }
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       LOG.error("Application Master Ended Abruptly!", ex);
       System.exit(1);
     }
